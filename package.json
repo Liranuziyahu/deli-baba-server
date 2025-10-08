@@ -1,0 +1,10 @@
+{
+  "name": "deli-baba",
+  "private": true,
+  "packageManager": "pnpm@10.18.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @deli-baba/api dev"
+  }
+}

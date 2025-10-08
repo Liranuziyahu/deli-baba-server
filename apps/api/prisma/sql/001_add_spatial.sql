@@ -1,0 +1,14 @@
+-- Add POINT columns (SRID 4326) + SPATIAL indexes
+ALTER TABLE orders
+ADD COLUMN location POINT GENERATED ALWAYS AS (
+IF(lat IS NULL OR lng IS NULL, NULL,
+ST_SRID(POINT(CAST(lng AS DOUBLE), CAST(lat AS DOUBLE)), 4326))
+) STORED,
+ADD SPATIAL INDEX sidx_orders_location (location);
+
+
+ALTER TABLE geo_events
+ADD COLUMN location POINT GENERATED ALWAYS AS (
+ST_SRID(POINT(CAST(lng AS DOUBLE), CAST(lat AS DOUBLE)), 4326)
+) STORED,
+ADD SPATIAL INDEX sidx_geo_location (location);

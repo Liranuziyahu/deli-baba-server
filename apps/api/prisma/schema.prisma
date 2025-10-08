@@ -1,0 +1,158 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// --- Enums ---
+enum UserRole {
+  ADMIN
+  DISPATCHER
+  DRIVER
+  VIEWER
+}
+
+enum OrderStatus {
+  PENDING
+  ASSIGNED
+  IN_ROUTE
+  DELIVERED
+  FAILED
+  CANCELED
+}
+
+enum StopStatus {
+  PENDING
+  ARRIVED
+  COMPLETED
+  SKIPPED
+}
+
+/// --- Core Users/Drivers ---
+
+model User {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole @default(VIEWER)
+
+  driver       Driver?
+  RefreshToken RefreshToken[]
+  AuditLog     AuditLog[]
+}
+
+model Driver {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int      @unique
+  phone     String?
+  vehicle   String? // plate or model
+  capacity  Int? // capacity units (e.g., boxes)
+  active    Boolean  @default(true)
+
+  user   User    @relation(fields: [userId], references: [id])
+  routes Route[]
+}
+
+/// --- Orders / Addresses ---
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  externalRef  String? // reference from POS/ERP
+  customerName String
+  phone        String?
+  addressLine  String
+  city         String
+  lat          Decimal?    @db.Decimal(9, 6)
+  lng          Decimal?    @db.Decimal(9, 6)
+  windowStart  DateTime?
+  windowEnd    DateTime?
+  notes        String?
+  status       OrderStatus @default(PENDING)
+
+  routeStop RouteStop?
+
+  @@index([status])
+  @@index([city])
+}
+
+/// --- Routes / Stops ---
+
+model Route {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  serviceDate DateTime // the day of delivery
+  driverId    Int?
+  startedAt   DateTime?
+  completedAt DateTime?
+  distanceKm  Decimal?  @db.Decimal(10, 2)
+  durationMin Int? // planned total minutes
+  status      String    @default("PLANNED") // PLANNED/IN_PROGRESS/COMPLETED
+
+  driver Driver?     @relation(fields: [driverId], references: [id])
+  stops  RouteStop[]
+
+  @@index([serviceDate])
+  @@index([driverId])
+}
+
+model RouteStop {
+  id          Int        @id @default(autoincrement())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  routeId     Int
+  orderId     Int        @unique
+  seq         Int // stop order in route
+  eta         DateTime?
+  etaMin      Int? // planned minutes from start
+  arrivedAt   DateTime?
+  completedAt DateTime?
+  status      StopStatus @default(PENDING)
+  notes       String?
+
+  route Route @relation(fields: [routeId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([routeId, seq])
+}
+
+/// --- Optional: Tokens / Audit ---
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id       Int      @id @default(autoincrement())
+  at       DateTime @default(now())
+  userId   Int?
+  action   String
+  entity   String?
+  entityId Int?
+  payload  Json?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, at])
+}

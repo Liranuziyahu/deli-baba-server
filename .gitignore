@@ -1,0 +1,41 @@
+﻿# --------------------------
+# NODE / TYPESCRIPT PROJECTS
+# --------------------------
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+*.log
+
+# --------------------------
+# ENVIRONMENT VARIABLES
+# --------------------------
+.env
+.env.local
+.env.development
+.env.production
+.env.*
+
+# --------------------------
+# PRISMA
+# --------------------------
+.prisma/
+node_modules/.prisma/
+*.db
+
+# --------------------------
+# DOCKER VOLUMES / LOGS
+# --------------------------
+mysql_data/
+redis_data/
+**/mysql_data/
+**/redis_data/
+docker/*.log
+docker-compose.override.yml
+
+# --------------------------
+# OS FILES
+# --------------------------
+.DS_Store
+Thumbs.db
