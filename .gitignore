@@ -45,8 +45,3 @@ Thumbs.db
 # --------------------------
 apps/api/openapi/openapi.yaml
 apps/api/openapi/source/collection.json
-
-# --------------------------
-# Docker
-# --------------------------
-docker-compose.yml
