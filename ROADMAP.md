@@ -1,0 +1,114 @@
+## 🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
+### 🎯 Goals:
+- Set up full development environment (Backend + DB + Swagger)
+- Build a stable and secure API foundation
+
+### ✅ Tasks:
+- [x] Installed Fastify + Prisma + Zod  
+- [x] Connected MySQL & Redis via Docker Compose  
+- [x] Created `.env` file and hid secrets from Git  
+- [x] Built Postman → OpenAPI script  
+- [x] Integrated Swagger (static mode)  
+- [x] Verified Prisma Studio (`localhost:5555`)  
+- [x] Cleaned GitGuardian findings (ignore, rebase)  
+
+**Deliverable:**  
+Working API with connected database and generated Swagger documentation.
+
+---
+
+## 🔐 Sprint 2 – Authentication & Basic CRUD 🏗 (Current)
+### 🎯 Goals:
+Implement secure user authentication and base management endpoints.
+
+### 🧩 Tasks:
+- [ ] Add JWT Auth:
+  - [ ] `POST /auth/register`
+  - [ ] `POST /auth/login`
+  - [ ] `GET /auth/me`
+- [ ] Create authentication middleware for protected routes
+- [ ] Full CRUD for **Users** (create, update, delete)
+- [ ] Full CRUD for **Drivers**
+- [ ] Update Swagger with new endpoints
+- [ ] Add validation with **Zod** for all inputs
+
+**Deliverable:**  
+Secure authentication + user and driver management via API & Swagger.
+
+---
+
+## 📦 Sprint 3 – Orders, Routes & Optimization ⏳ (Next Week)
+### 🎯 Goals:
+Implement the core logic — order management and smart route generation.
+
+### 🧩 Tasks:
+- [ ] CRUD for **Orders** (create, update status, delete)
+- [ ] **Route Management:**
+  - [ ] Create new route and assign orders
+  - [ ] Manage delivery stops (RouteStops)
+- [ ] **Route Optimization Service:**
+  - [ ] Use Google Maps Distance Matrix API
+  - [ ] Store optimized route in the database
+- [ ] Add complete Swagger documentation for all routes
+
+**Deliverable:**  
+Automated smart routing system that assigns orders efficiently 🧠
+
+---
+
+## 🗺 Sprint 4 – Frontend Dashboard + Map ⏳
+### 🎯 Goals:
+Develop a modern management dashboard with live map visualization.
+
+### 🧩 Tasks:
+- [ ] Initialize Frontend project (`apps/web`)
+- [ ] Build Login / Register pages
+- [ ] Create Dashboard with statistics (Users, Orders, Routes)
+- [ ] Integrate API via Axios or React Query
+- [ ] Display delivery routes on Google Maps / Leaflet
+- [ ] Basic UI design with TailwindCSS or MUI
+
+**Deliverable:**  
+Fully functional admin dashboard for managers and drivers with live route visualization.
+
+---
+
+## 🧾 Sprint 5 – Testing & Deployment (Optional)
+### 🎯 Goals:
+Stabilize and prepare for production deployment.
+
+### 🧩 Tasks:
+- [ ] Unit tests (Jest / Vitest)
+- [ ] Integration tests using Fastify inject
+- [ ] Dockerfile for API build
+- [ ] Deploy API to Render / Railway / Fly.io
+- [ ] Deploy Frontend to Vercel / Netlify
+- [ ] Secure `.env.production` configuration
+
+**Deliverable:**  
+Production-ready, tested, and deployed Deli-Baba system.
+
+---
+
+## 📈 Sprint Progress Overview
+
+| Sprint | Period | Focus | Status |
+|---------|---------|--------|--------|
+| 1 | Completed | Infrastructure & DB Setup | ✅ Done |
+| 2 | Current | Auth + CRUD | 🏗 In Progress |
+| 3 | Next Week | Route Optimization | ⏳ Planned |
+| 4 | Following Week | Frontend Dashboard | ⏳ Planned |
+| 5 | Optional | Testing & Deployment | ⏳ Planned |
+
+---
+
+## 🧠 Productivity Tips
+- Mark at least one ✅ task per day.  
+- Keep Swagger updated with every API change.  
+- Use separate `.env` for production.  
+- Commit only meaningful chunks (not every line).  
+- Verify Docker containers before each push.  
+
+---
+
+**Last Updated:** _{today’s date}_  
