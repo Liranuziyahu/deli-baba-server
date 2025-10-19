@@ -5,6 +5,7 @@ services:
       MYSQL_DATABASE: deli_baba
       MYSQL_USER: deli
       MYSQL_PASSWORD: 318866175Kk
+      MYSQL_ROOT_PASSWORD: 318866175Kk   # ← חובה כדי שהקונטיינר לא יקרוס
     ports:
       - '3307:3306'
     command:

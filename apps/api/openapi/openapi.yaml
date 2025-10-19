@@ -1,0 +1,709 @@
+openapi: 3.1.0
+info:
+  title: Deli-baba API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/
+tags:
+  - name: Users
+  - name: Drivers
+  - name: Orders
+  - name: Routes
+  - name: RouteStops
+paths:
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List users (paged)
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "1"
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "10"
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          example: ""
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags:
+        - Users
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_user_Request"
+            example:
+              email: john@deli.local
+              fullName: John Doe
+              password: dev-only
+              role: DISPATCHER
+              createDriver:
+                phone: 050-7777777
+                vehicle: Car
+                capacity: 40
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /users/13:
+    get:
+      tags:
+        - Users
+      summary: Get user by id
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+    patch:
+      tags:
+        - Users
+      summary: Update user email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Update_user_email_Request"
+            example:
+              email: john.updated@deli.local
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /users/10:
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /drivers:
+    get:
+      tags:
+        - Drivers
+      summary: List drivers (active=false)
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "1"
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "10"
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "false"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags:
+        - Drivers
+      summary: Create driver (link to userId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_driver__link_to_userId__Request"
+            example:
+              userId: 2
+              phone: 050-1234567
+              vehicle: Scooter
+              capacity: 25
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /drivers/6:
+    get:
+      tags:
+        - Drivers
+      summary: Get driver by id
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /drivers/1:
+    patch:
+      tags:
+        - Drivers
+      summary: Update driver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Update_driver_Request"
+            example:
+              active: false
+              vehicle: Van
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+    delete:
+      tags:
+        - Drivers
+      summary: Delete driver
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /orders:
+    get:
+      tags:
+        - Orders
+      summary: Search orders
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "1"
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "10"
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          example: 050-1234567
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags:
+        - Orders
+      summary: Create order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_order_Request"
+            example:
+              externalRef: POS-100522
+              customerName: לקוח זהב
+              phone: 050-0000200
+              addressLine: הרצל 10
+              city: תל אביב
+              notes: להתקשר לפני הגעה
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /orders/bulk:
+    post:
+      tags:
+        - Orders
+      summary: Bulk create orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Bulk_create_orders_Request"
+            example:
+              - externalRef: ORD-A-77772
+                customerName: Test
+                addressLine: רחוב א 1
+                city: תל אביב
+                phone: "0503649949"
+              - externalRef: ORD-A-777712
+                customerName: Test
+                addressLine: רחוב ב 2
+                city: חולון
+                phone: "0503649949"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /orders/22:
+    patch:
+      tags:
+        - Orders
+      summary: Update order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Update_order_Request"
+            example:
+              status: ASSIGNED
+              notes: עדכון
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/create:
+    post:
+      tags:
+        - Routes
+      summary: Create route (assign orders to driver)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_route__assign_orders_to_driver__Request"
+            example:
+              driverId: 7
+              serviceDate: 2025-10-11T08:00:00.000Z
+              orderIds:
+                - 60
+                - 61
+              distanceKm: 5
+              durationMin: 5
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/4/assign:
+    post:
+      tags:
+        - Routes
+      summary: Assign Order to Exist Route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Assign_Order_to_Exist_Route_Request"
+            example:
+              orderIds:
+                - 58
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes:
+    get:
+      tags:
+        - Routes
+      summary: List routes (by driverId)
+      parameters:
+        - name: driverId
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "1"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/1:
+    get:
+      tags:
+        - Routes
+      summary: Get route by id
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/1/status:
+    patch:
+      tags:
+        - Routes
+      summary: Update route status → COMPLETED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Update_route_status___COMPLETED_Request"
+            example:
+              status: COMPLETED
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/2/stops/1/status:
+    patch:
+      tags:
+        - RouteStops
+      summary: "Stop: ARRIVED"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Stop__ARRIVED_Request"
+            example:
+              status: ARRIVED
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/1/stops/2/status:
+    patch:
+      tags:
+        - RouteStops
+      summary: "Stop: COMPLETED"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Stop__COMPLETED_Request"
+            example:
+              status: ARRIVED
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /routes/4/stops/resequence:
+    post:
+      tags:
+        - RouteStops
+      summary: Resequence stops
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Resequence_stops_Request"
+            example:
+              sequence:
+                - stopId: 10
+                  seq: 1
+                - stopId: 11
+                  seq: 2
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+  /:
+    get:
+      tags:
+        - RouteStops
+      summary: Delete assign order to driver
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    Create_user_Request:
+      type: object
+      properties:
+        email:
+          type: string
+        fullName:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+        createDriver:
+          type: object
+          properties:
+            phone:
+              type: string
+            vehicle:
+              type: string
+            capacity:
+              type: integer
+          required:
+            - phone
+            - vehicle
+            - capacity
+          additionalProperties: false
+      required:
+        - email
+        - fullName
+        - password
+        - role
+        - createDriver
+      additionalProperties: false
+    Update_user__partial__Request:
+      type: object
+      properties:
+        fullName:
+          type: string
+        password:
+          type: string
+      required:
+        - fullName
+        - password
+      additionalProperties: false
+    Update_user_email_Request:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+      additionalProperties: false
+    Create_driver__link_to_userId__Request:
+      type: object
+      properties:
+        userId:
+          type: integer
+        phone:
+          type: string
+        vehicle:
+          type: string
+        capacity:
+          type: integer
+      required:
+        - userId
+        - phone
+        - vehicle
+        - capacity
+      additionalProperties: false
+    Update_driver_Request:
+      type: object
+      properties:
+        active:
+          type: boolean
+        vehicle:
+          type: string
+      required:
+        - active
+        - vehicle
+      additionalProperties: false
+    Create_order_Request:
+      type: object
+      properties:
+        externalRef:
+          type: string
+        customerName:
+          type: string
+        phone:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        notes:
+          type: string
+      required:
+        - externalRef
+        - customerName
+        - phone
+        - addressLine
+        - city
+        - notes
+      additionalProperties: false
+    Bulk_create_orders_Request:
+      type: array
+      items:
+        type: object
+        properties:
+          externalRef:
+            type: string
+          customerName:
+            type: string
+          addressLine:
+            type: string
+          city:
+            type: string
+          phone:
+            type: string
+        required:
+          - externalRef
+          - customerName
+          - addressLine
+          - city
+          - phone
+        additionalProperties: false
+    Update_order_Request:
+      type: object
+      properties:
+        status:
+          type: string
+        notes:
+          type: string
+      required:
+        - status
+        - notes
+      additionalProperties: false
+    Create_route__assign_orders_to_driver__Request:
+      type: object
+      properties:
+        driverId:
+          type: integer
+        serviceDate:
+          type: string
+        orderIds:
+          type: array
+          items:
+            type: integer
+        distanceKm:
+          type: integer
+        durationMin:
+          type: integer
+      required:
+        - driverId
+        - serviceDate
+        - orderIds
+        - distanceKm
+        - durationMin
+      additionalProperties: false
+    Assign_Order_to_Exist_Route_Request:
+      type: object
+      properties:
+        orderIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - orderIds
+      additionalProperties: false
+    Update_route_status___IN_PROGRESS_Request:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+      additionalProperties: false
+    Update_route_status___COMPLETED_Request:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+      additionalProperties: false
+    Stop__ARRIVED_Request:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+      additionalProperties: false
+    Stop__COMPLETED_Request:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+      additionalProperties: false
+    Resequence_stops_Request:
+      type: object
+      properties:
+        sequence:
+          type: array
+          items:
+            type: object
+            properties:
+              stopId:
+                type: integer
+              seq:
+                type: integer
+            required:
+              - stopId
+              - seq
+            additionalProperties: false
+      required:
+        - sequence
+      additionalProperties: false

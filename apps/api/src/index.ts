@@ -2,23 +2,57 @@ import Fastify from "fastify";
 import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 import cors from "@fastify/cors";
+import fs from "fs";
+import path from "path"; // ✅ נוספה שורה זו
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+
 dotenv.config();
 
-const app = Fastify();
+const app = Fastify({ logger: true });
 
 // Prisma על האפליקציה
 declare module "fastify" {
-  interface FastifyInstance { prisma: PrismaClient; }
+  interface FastifyInstance {
+    prisma: PrismaClient;
+  }
 }
 app.decorate("prisma", new PrismaClient());
 
-// רשום CORS (אפשר עם await top-level, או בתוך ready)
+// CORS
 await app.register(cors, { origin: true });
+
+// 🧩 Swagger (טעינת קובץ OpenAPI קיים בלבד)
+const openapiPath = path.resolve("openapi", "openapi.yaml");
+
+await app.register(swagger, {
+  mode: "static",
+  specification: {
+    path: openapiPath,
+    baseDir: path.resolve(),
+  },
+});
+
+// UI
+await app.register(swaggerUi, {
+  routePrefix: "/docs",
+  uiConfig: { docExpansion: "list", deepLinking: false },
+});
+
+// ⚙️ אופציונלי – לחשוף את ה־spec ישירות כ־JSON
+app.get("/openapi.json", async (_, reply) => {
+  const spec = fs.readFileSync(openapiPath, "utf8");
+  reply.type("application/yaml").send(spec);
+});
 
 // error handler ל-Zod
 app.setErrorHandler((err, req, reply) => {
-  if ((err as any).issues) return reply.code(400).send({ error: "ValidationError", issues: (err as any).issues });
-  console.error(err);
+  if ((err as any).issues) {
+    return reply
+      .code(400)
+      .send({ error: "ValidationError", issues: (err as any).issues });
+  }
+  req.log.error(err);
   reply.code(500).send({ error: "InternalError" });
 });
 
@@ -33,7 +67,7 @@ app.get("/", async () => {
   return { ok: true, users, orders, routes, stops };
 });
 
-// ראוטים
+// ראוטים (לא משנים)
 import usersRoutes from "./routes/users.ts";
 import driversRoutes from "./routes/drivers.ts";
 import ordersRoutes from "./routes/orders.ts";
@@ -46,13 +80,22 @@ app.register(ordersRoutes);
 app.register(routesRoutes);
 app.register(routeStopsRoutes);
 
-// סגירה נקייה + הדפסת ראוטים (אופציונלי)
-app.addHook("onClose", async () => { await app.prisma.$disconnect(); });
+// סגירה נקייה
+app.addHook("onClose", async () => {
+  await app.prisma.$disconnect();
+});
 process.on("SIGINT", () => app.close());
 process.on("SIGTERM", () => app.close());
-app.ready().then(() => console.log(app.printRoutes()));
 
 const port = Number(process.env.PORT || 3000);
-app.listen({ port, host: "0.0.0.0" })
-  .then(addr => console.log(`🚀 API on ${addr}`))
-  .catch(err => { console.error(err); process.exit(1); });
+
+try {
+  await app.ready();
+  const addr = await app.listen({ port, host: "0.0.0.0" });
+  console.log(`🚀 API on http://localhost:${port}`);
+  console.log(`📘 Swagger docs → http://localhost:${port}/docs`);
+  console.log(`📄 Spec JSON → http://localhost:${port}/openapi.json`);
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}
