@@ -39,3 +39,14 @@ docker-compose.override.yml
 # --------------------------
 .DS_Store
 Thumbs.db
+
+# --------------------------
+# Swagger / Postman
+# --------------------------
+apps/api/openapi/openapi.yaml
+apps/api/openapi/source/collection.json
+
+# --------------------------
+# Docker
+# --------------------------
+docker-compose.yml

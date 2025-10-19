@@ -69,9 +69,9 @@ model Order {
   id           Int         @id @default(autoincrement())
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-  externalRef  String? // reference from POS/ERP
+  externalRef  String     @unique   
   customerName String
-  phone        String?
+  phone        String
   addressLine  String
   city         String
   lat          Decimal?    @db.Decimal(9, 6)
@@ -132,7 +132,7 @@ model RouteStop {
 
 model RefreshToken {
   id        Int       @id @default(autoincrement())
-  userId    Int
+  userId    Int       @unique
   token     String    @unique
   expiresAt DateTime
   createdAt DateTime  @default(now())
