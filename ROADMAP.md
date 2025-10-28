@@ -42,10 +42,10 @@ Secure authentication + user and driver management via API & Swagger.
 Implement the core logic — order management and smart route generation.
 
 ### 🧩 Tasks:
-- [ ] CRUD for **Orders** (create, update status, delete)
-- [ ] **Route Management:**
-  - [ ] Create new route and assign orders
-  - [ ] Manage delivery stops (RouteStops)
+- [x] CRUD for **Orders** (create, update status, delete)
+- [x] **Route Management:**
+  - [x] Create new route and assign orders
+  - [x] Manage delivery stops (RouteStops)
 - [ ] **Route Optimization Service:**
   - [ ] Use Google Maps Distance Matrix API
   - [ ] Store optimized route in the database
