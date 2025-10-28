@@ -6,6 +6,16 @@ import fs from "fs";
 import path from "path"; // ✅ נוספה שורה זו
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { FastifyStaticSwaggerOptions } from "@fastify/swagger";
+
+// ROUTES
+import usersRoutes from "./routes/users.ts";
+import driversRoutes from "./routes/drivers.ts";
+import ordersRoutes from "./routes/orders.ts";
+import routesRoutes from "./routes/routes.ts";
+import routeStopsRoutes from "./routes/routeStops.ts";
+import authPlugin from "./plugins/auth";
+import authRoutes from "./routes/auth";
 
 dotenv.config();
 
@@ -15,23 +25,46 @@ const app = Fastify({ logger: true });
 declare module "fastify" {
   interface FastifyInstance {
     prisma: PrismaClient;
+    authenticate: any;
   }
 }
 app.decorate("prisma", new PrismaClient());
 
+// Auth Plugin (JWT)
+await app.register(authPlugin);
+
 // CORS
 await app.register(cors, { origin: true });
 
-// 🧩 Swagger (טעינת קובץ OpenAPI קיים בלבד)
+// 🧩 Swagger (טעינת קובץ OpenAPI קיים + הוספת הגדרות אבטחה ל-UI)
 const openapiPath = path.resolve("openapi", "openapi.yaml");
-
-await app.register(swagger, {
+const swaggerOptions: FastifyStaticSwaggerOptions = {
   mode: "static",
   specification: {
     path: openapiPath,
     baseDir: path.resolve(),
   },
-});
+};
+
+// @ts-ignore – מוסיפים הגדרות OpenAPI רק ל־UI (לא חלק מהטייפ הרגיל)
+(swaggerOptions as any).openapi = {
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+      },
+    },
+  },
+  security: [
+    {
+      bearerAuth: [],
+    },
+  ],
+};
+
+await app.register(swagger, swaggerOptions);
 
 // UI
 await app.register(swaggerUi, {
@@ -48,9 +81,7 @@ app.get("/openapi.json", async (_, reply) => {
 // error handler ל-Zod
 app.setErrorHandler((err, req, reply) => {
   if ((err as any).issues) {
-    return reply
-      .code(400)
-      .send({ error: "ValidationError", issues: (err as any).issues });
+    return reply.code(400).send({ error: "ValidationError", issues: (err as any).issues });
   }
   req.log.error(err);
   reply.code(500).send({ error: "InternalError" });
@@ -67,13 +98,7 @@ app.get("/", async () => {
   return { ok: true, users, orders, routes, stops };
 });
 
-// ראוטים (לא משנים)
-import usersRoutes from "./routes/users.ts";
-import driversRoutes from "./routes/drivers.ts";
-import ordersRoutes from "./routes/orders.ts";
-import routesRoutes from "./routes/routes.ts";
-import routeStopsRoutes from "./routes/routeStops.ts";
-
+app.register(authRoutes);
 app.register(usersRoutes);
 app.register(driversRoutes);
 app.register(ordersRoutes);

@@ -11,7 +11,7 @@ export default async function ordersRoutes(app: FastifyInstance) {
     search: z.string().optional(), // לפי customerName / externalRef
   });
 
-  app.get("/orders", async (req, reply) => {
+  app.get("/orders",{preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { page, pageSize, status, city, search } = listQ.parse(req.query);
 
@@ -68,7 +68,7 @@ export default async function ordersRoutes(app: FastifyInstance) {
     notes: z.string().optional(),
   });
 
-  app.post("/orders", async (req, reply) => {
+  app.post("/orders",{preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const body = createB.parse(req.body);
       const order = await app.prisma.order.create({ data: body });
@@ -80,7 +80,7 @@ export default async function ordersRoutes(app: FastifyInstance) {
   });
 
   // ייבוא כמה הזמנות בבת אחת
-  app.post("/orders/bulk", async (req, reply) => {
+  app.post("/orders/bulk",{preHandler: [app.authenticate] }, async (req, reply) => {
    try{
      const items = z.array(createB).min(1).max(1000).parse(req.body);
     const created = await app.prisma.$transaction(items.map((d) => app.prisma.order.create({ data: d })));

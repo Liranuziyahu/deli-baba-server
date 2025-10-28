@@ -8,7 +8,8 @@ type OpenAPIDoc = {
   servers: { url: string }[];
   tags?: { name: string }[];
   paths: Record<string, any>;
-  components: { schemas: Record<string, any> };
+  components: { schemas: Record<string, any>; securitySchemes?: Record<string, any> };
+  security?: any[];
 };
 
 const input = process.argv[2];
@@ -19,11 +20,11 @@ if (!input) {
 }
 
 const raw = fs.readFileSync(input, "utf8");
-const coll = JSON.parse(raw); // ← זהו אובייקט ה-Postman המקורי
+const coll = JSON.parse(raw);
 
 const oas: OpenAPIDoc = {
   openapi: "3.1.0",
-  info: { title: coll.info?.name || coll.info?.title || coll.info?.description || "API", version: "1.0.0" },
+  info: { title: coll.info?.name || "API", version: "1.0.0" },
   servers: [{ url: "http://localhost:3000/" }],
   tags: [],
   paths: {},
@@ -85,106 +86,48 @@ const upsertSchema = (name: string, sample: any) => {
   return n;
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-// path מה-raw או מה-path של Postman
-const getPathFromUrl = (u: any): string => {
-  if (!u) return "/";
-  // 1) אם יש path כ-array: ["api","v1","users","{{id}}"]
-  if (u.path && Array.isArray(u.path) && u.path.length) {
-    return "/" + u.path.join("/");
-  }
-  // 2) אם יש raw מלא (יכול להיות URL מלא או relative עם querystring)
-  const raw = typeof u === "string" ? u : u.raw || "";
-  if (raw) {
-    // תנסה כ-URL מלא; אם לא—תחתוך עד סימן שאלה
-    try {
-      const parsed = new URL(raw);
-      return parsed.pathname || "/";
-    } catch {
-      const pathname = raw.split("?")[0] || "/";
-      return pathname.startsWith("/") ? pathname : "/" + pathname;
-    }
-  }
-  return "/";
-};
-
-// ממיר :id ל-{id} וגם {{var}} ל-{var}
-const normalizeTemplatedParams = (p: string): string =>
-  p
-    .replace(/:([A-Za-z0-9_]+)/g, (_m, v) => `{${v}}`)
-    .replace(/{{\s*([^}]+)\s*}}/g, (_m, v) => `{${String(v).replace(/\W+/g, "_")}}`);
-
-// מחלץ מערך באופן אחיד (תומך גם ב-Collection SDK וגם ב-JSON גולמי)
-const toArray = (maybe: any): any[] => {
-  if (!maybe) return [];
-  if (Array.isArray(maybe)) return maybe;
-  if (typeof maybe.count === "function" && typeof maybe.each === "function") {
-    const arr: any[] = [];
-    maybe.each((x: any) => arr.push(x));
-    return arr;
-  }
-  return [];
-};
-
-// ─── The walk ──────────────────────────────────────────────────────────────────
-
-// ─── Main Recursive Parser ──────────────────────────────────────────────
+// ─── Recursive Walk ───────────────────────────────────────────────────────────────
 
 const walk = (items: any[], currentTag?: string) => {
   for (const it of items) {
-    // אם זה תיקייה (folder)
     if (it.item && Array.isArray(it.item)) {
       const tag = it.name?.trim() || currentTag || "General";
-      console.log("📂 Folder →", tag);
-
       addTag(tag);
-      walk(it.item, tag); // העברת השם של התיקייה כ־tag לכל הילדים
+      walk(it.item, tag);
       continue;
     }
 
-    // אם זה request רגיל
     const req = it.request;
     if (!req) continue;
 
     const method = String(req.method || "GET").toLowerCase();
+    const rawUrl = req.url?.raw || "";
+    let rawPath = rawUrl.split("?")[0] || "/";
+    if (rawPath.includes("{{baseUrl}}")) {
+      rawPath = rawPath.replace(/{{\s*baseUrl\s*}}\/?/, ""); // מסיר את {{baseUrl}} מהנתיב
+    }
+    const path = toOASPath(rawPath);
 
-    // הפקת הנתיב
-    const getPathFromUrl = (u: any): string => {
-      if (!u) return "/";
-      if (u.path && Array.isArray(u.path) && u.path.length) return "/" + u.path.join("/");
-      const raw = typeof u === "string" ? u : u.raw || "";
-      const pathname = raw.split("?")[0] || "/";
-      return pathname.startsWith("/") ? pathname : "/" + pathname;
-    };
-    const urlPath = getPathFromUrl(req.url);
-    const fullPath = toOASPath(urlPath);
-
-    // אם אין tag מההורה — ננסה להסיק לפי הנתיב
     const inferTag =
       currentTag ||
-      (fullPath.includes("/users")
+      (path.includes("/users")
         ? "Users"
-        : fullPath.includes("/drivers")
+        : path.includes("/drivers")
         ? "Drivers"
-        : fullPath.includes("/orders")
+        : path.includes("/orders")
         ? "Orders"
-        : fullPath.includes("/routes") && fullPath.includes("/stops")
+        : path.includes("/routes") && path.includes("/stops")
         ? "RouteStops"
-        : fullPath.includes("/routes")
+        : path.includes("/routes")
         ? "Routes"
         : "Default");
 
-        console.log("➡️  Endpoint:", fullPath, "| tag:", inferTag);
-
     addTag(inferTag);
+    const pathItem = ensurePathItem(path);
 
-    const pathItem = ensurePathItem(fullPath);
-
-    // parameters: path + query
+    // parameters
     const parameters: any[] = [];
-
-    for (const m of fullPath.matchAll(/{([^}]+)}/g)) {
+    for (const m of path.matchAll(/{([^}]+)}/g)) {
       parameters.push({ name: m[1], in: "path", required: true, schema: { type: "string" } });
     }
 
@@ -200,12 +143,12 @@ const walk = (items: any[], currentTag?: string) => {
       }
     }
 
-    // requestBody (אם יש JSON)
+    // request body
     let requestBody: any = undefined;
     if (req.body?.mode === "raw" && typeof req.body.raw === "string") {
       const sample = guessJson(req.body.raw);
       if (sample && typeof sample === "object") {
-        const schemaName = upsertSchema(`${it.name || method + fullPath}-Request`, sample);
+        const schemaName = upsertSchema(`${it.name || method + path}-Request`, sample);
         requestBody = {
           required: true,
           content: {
@@ -218,7 +161,7 @@ const walk = (items: any[], currentTag?: string) => {
       }
     }
 
-    // תגובה בסיסית
+    // responses
     const responses: any = {
       "200": {
         description: "Success",
@@ -226,30 +169,34 @@ const walk = (items: any[], currentTag?: string) => {
       },
     };
 
-    // רישום בפאת'ים
+    // auth rule: protect all except login/register
+    const isProtected = !path.includes("/auth/login") && !path.includes("/auth/register");
+    const security = isProtected ? [{ bearerAuth: [] }] : undefined;
+
     pathItem[method] = {
       tags: [inferTag],
       summary: it.name || undefined,
-      description:
-        typeof it.description === "string"
-          ? it.description
-          : it.description?.content || req.description || undefined,
+      description: req.description || undefined,
       parameters: parameters.length ? parameters : undefined,
       requestBody,
       responses,
+      ...(security ? { security } : {}),
     };
   }
 };
 
-
 const rootItems = Array.isArray(coll.item) ? coll.item : [];
 walk(rootItems);
 
-// // (אופציונלי) אבטחה גלובלית Bearer:
-// (oas as any).components = (oas as any).components || {};
-// (oas as any).components.securitySchemes = { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } };
-// (oas as any).security = [{ bearerAuth: [] }];
+// ─── Add global JWT definition ───────────────────────────────────────────────
+oas.components.securitySchemes = {
+  bearerAuth: {
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "JWT",
+  },
+};
 
 const yaml = YAML.stringify(oas);
 fs.writeFileSync(out, yaml, "utf8");
-console.log(`✅ Wrote ${path.resolve(out)}`);
+console.log(`✅ Wrote ${path.resolve(out)} with automatic JWT security`);

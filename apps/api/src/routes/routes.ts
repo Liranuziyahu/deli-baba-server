@@ -12,7 +12,7 @@ export default async function routesRoutes(app: FastifyInstance) {
     durationMin: z.number().int().nonnegative().optional(),
   });
 
-  app.post("/routes/create", async (req, reply) => {
+  app.post("/routes/create", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { driverId, serviceDate, orderIds, distanceKm, durationMin } = createB.parse(req.body);
 
@@ -48,7 +48,7 @@ export default async function routesRoutes(app: FastifyInstance) {
   });
 
   // שיוך הזמנות למסלול קיים (append stops)
-  app.post("/routes/:id/assign", async (req, reply) => {
+  app.post("/routes/:id/assign", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const routeId = z.coerce
         .number()
@@ -142,7 +142,7 @@ export default async function routesRoutes(app: FastifyInstance) {
     driverId: z.coerce.number().int().optional(),
   });
 
-  app.get("/routes", async (req) => {
+  app.get("/routes", { preHandler: [app.authenticate] }, async (req) => {
     try {
       const { date, driverId } = listQ.parse(req.query);
       const where: any = {};
@@ -167,7 +167,7 @@ export default async function routesRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get("/routes/:id", async (req, reply) => {
+  app.get("/routes/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const id = z.coerce
         .number()
@@ -186,7 +186,7 @@ export default async function routesRoutes(app: FastifyInstance) {
   });
 
   // שינוי סטטוס מסלול (התחלה/סיום)
-  app.patch("/routes/:id/status", async (req, reply) => {
+  app.patch("/routes/:id/status", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const id = z.coerce
         .number()

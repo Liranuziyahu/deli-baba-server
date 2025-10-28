@@ -7,41 +7,51 @@ export default async function usersRoutes(app: FastifyInstance) {
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
     search: z.string().trim().optional(),
-    role: z.enum(["ADMIN","DISPATCHER","DRIVER","VIEWER"]).optional(),
-    sort: z.enum(["id","email","fullName","createdAt"]).default("id"),
-    order: z.enum(["asc","desc"]).default("desc"),
+    role: z.enum(["ADMIN", "DISPATCHER", "DRIVER", "VIEWER"]).optional(),
+    sort: z.enum(["id", "email", "fullName", "createdAt"]).default("id"),
+    order: z.enum(["asc", "desc"]).default("desc"),
   });
 
-  app.get("/users", async (req) => {
-    const { page, pageSize, search, role, sort, order } = listQ.parse(req.query);
+  app.get(
+    "/users",
+    { preHandler: [app.authenticate] }, // ✅ כאן ההגנה
+    async (req) => {
+      const { page, pageSize, search, role, sort, order } = listQ.parse(req.query);
 
-    const where: any = {};
-    if (search) where.OR = [
-      { email: { contains: search } },
-      { fullName: { contains: search } },
-    ];
-    if (role) where.role = role;
+      const where: any = {};
+      if (search) where.OR = [{ email: { contains: search } }, { fullName: { contains: search } }];
+      if (role) where.role = role;
 
-    const [items, total] = await Promise.all([
-      app.prisma.user.findMany({
-        where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { [sort]: order },
-        select: { id:true, email:true, fullName:true, role:true, createdAt:true },
-      }),
-      app.prisma.user.count({ where }),
-    ]);
+      const [items, total] = await Promise.all([
+        app.prisma.user.findMany({
+          where,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: { [sort]: order },
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            role: true,
+            createdAt: true,
+          },
+        }),
+        app.prisma.user.count({ where }),
+      ]);
 
-    return { page, pageSize, total, items };
-  });
+      return { page, pageSize, total, items };
+    }
+  );
 
   // ========= Get by id =========
-  app.get("/users/:id", async (req, reply) => {
-    const id = z.coerce.number().int().parse((req.params as any).id);
+  app.get("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
+    const id = z.coerce
+      .number()
+      .int()
+      .parse((req.params as any).id);
     const user = await app.prisma.user.findUnique({
       where: { id },
-      select: { id:true, email:true, fullName:true, role:true, createdAt:true, driver:true },
+      select: { id: true, email: true, fullName: true, role: true, createdAt: true, driver: true },
     });
     if (!user) return reply.code(404).send({ error: "User not found" });
     return user;
@@ -52,7 +62,7 @@ export default async function usersRoutes(app: FastifyInstance) {
     email: z.string().email(),
     fullName: z.string().min(2),
     password: z.string().min(4), // dev only; החלף ב-hash בפרודקשן
-    role: z.enum(["ADMIN","DISPATCHER","DRIVER","VIEWER"]).default("VIEWER"),
+    role: z.enum(["ADMIN", "DISPATCHER", "DRIVER", "VIEWER"]).default("VIEWER"),
     // אופציונלי: יצירת Driver צמוד לאותו User
     createDriver: z
       .object({
@@ -63,7 +73,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       .optional(),
   });
 
-  app.post("/users", async (req, reply) => {
+  app.post("/users", { preHandler: [app.authenticate] }, async (req, reply) => {
     const { email, fullName, password, role, createDriver } = createB.parse(req.body);
     try {
       const user = await app.prisma.user.create({
@@ -94,12 +104,15 @@ export default async function usersRoutes(app: FastifyInstance) {
   // ========= Update (partial) =========
   const patchB = z.object({
     fullName: z.string().min(2).optional(),
-    role: z.enum(["ADMIN","DISPATCHER","DRIVER","VIEWER"]).optional(),
+    role: z.enum(["ADMIN", "DISPATCHER", "DRIVER", "VIEWER"]).optional(),
     password: z.string().min(4).optional(),
   });
 
-  app.patch("/users/:id", async (req, reply) => {
-    const id = z.coerce.number().int().parse((req.params as any).id);
+  app.patch("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
+    const id = z.coerce
+      .number()
+      .int()
+      .parse((req.params as any).id);
     const data = patchB.parse(req.body);
 
     try {
@@ -110,7 +123,7 @@ export default async function usersRoutes(app: FastifyInstance) {
           role: data.role,
           ...(data.password ? { passwordHash: data.password } : {}),
         },
-        select: { id:true },
+        select: { id: true },
       });
       return { ok: true, id: user.id };
     } catch (e: any) {
@@ -120,8 +133,11 @@ export default async function usersRoutes(app: FastifyInstance) {
   });
 
   // ========= Delete =========
-  app.delete("/users/:id", async (req, reply) => {
-    const id = z.coerce.number().int().parse((req.params as any).id);
+  app.delete("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
+    const id = z.coerce
+      .number()
+      .int()
+      .parse((req.params as any).id);
     try {
       await app.prisma.user.delete({ where: { id } });
       return reply.code(204).send();
