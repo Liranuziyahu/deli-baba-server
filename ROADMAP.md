@@ -102,4 +102,4 @@ Production-ready, tested, and deployed Deli-Baba system.
 
 ---
 
-**Last Updated:** {{date}}  
+**Last Updated:** $(date)  
