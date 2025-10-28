@@ -109,6 +109,9 @@ export default async function driversRoutes(app: FastifyInstance) {
 
       return reply.code(201).send({ id: driver.id });
     } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
       if (err?.code === "P2002") {
         // userId unique violation
         return reply.code(409).send({ error: "DriverAlreadyExistsForUser" });
@@ -147,6 +150,9 @@ export default async function driversRoutes(app: FastifyInstance) {
 
       return { ok: true, id: driver.id };
     } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
       if (err?.code === "P2025") {
         return reply.code(404).send({ error: "DriverNotFound" });
       }
@@ -167,6 +173,9 @@ export default async function driversRoutes(app: FastifyInstance) {
       await app.prisma.driver.delete({ where: { id } });
       return reply.code(204).send();
     } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
       if (err?.code === "P2025") {
         return reply.code(404).send({ error: "DriverNotFound" });
       }

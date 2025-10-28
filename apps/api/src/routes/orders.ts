@@ -3,19 +3,19 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 export default async function ordersRoutes(app: FastifyInstance) {
+  // ========= List =========
   const listQ = z.object({
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
     status: z.string().optional(),
     city: z.string().optional(),
-    search: z.string().optional(), // לפי customerName / externalRef
+    search: z.string().optional(),
   });
 
-  app.get("/orders",{preHandler: [app.authenticate] }, async (req, reply) => {
+  app.get("/orders", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { page, pageSize, status, city, search } = listQ.parse(req.query);
 
-      // בניית תנאי סינון דינמי
       const where: any = {};
       if (status) where.status = status;
       if (city) where.city = city;
@@ -49,12 +49,16 @@ export default async function ordersRoutes(app: FastifyInstance) {
         app.prisma.order.count({ where }),
       ]);
       return { page, pageSize, total, items };
-    } catch (err) {
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
       app.log.error({ err }, "GET /orders failed");
       return reply.code(500).send({ error: "ListOrdersFailed" });
     }
   });
 
+  // ========= Create =========
   const createB = z.object({
     externalRef: z.string().optional(),
     customerName: z.string().min(2),
@@ -68,48 +72,56 @@ export default async function ordersRoutes(app: FastifyInstance) {
     notes: z.string().optional(),
   });
 
-  app.post("/orders",{preHandler: [app.authenticate] }, async (req, reply) => {
+  app.post("/orders", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const body = createB.parse(req.body);
       const order = await app.prisma.order.create({ data: body });
       return reply.code(201).send({ id: order.id });
-    } catch (err) {
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
       app.log.error({ err }, "POST /orders failed");
-      return reply.code(500).send({ error: "Create order failed" });
+      return reply.code(500).send({ error: "CreateOrderFailed" });
     }
   });
 
-  // ייבוא כמה הזמנות בבת אחת
-  app.post("/orders/bulk",{preHandler: [app.authenticate] }, async (req, reply) => {
-   try{
-     const items = z.array(createB).min(1).max(1000).parse(req.body);
-    const created = await app.prisma.$transaction(items.map((d) => app.prisma.order.create({ data: d })));
-    return reply.code(201).send({ inserted: created.length });
-   }
-   catch(err){
-    console.log(err);
-    app.log.error({ err }, "POST /orders/bulk failed");
-    return reply.code(500).send({ error: "Bulk create orders failed" });
-    }
-  });
-
-  // עדכון הזמנה
-  const patchB = createB.partial().extend({
-    status: z.enum(["PENDING", "ASSIGNED", "IN_ROUTE", "DELIVERED", "FAILED", "CANCELED"]).optional(),
-  });
-
-  app.patch("/orders/:id", async (req, reply) => {
+  // ========= Bulk create =========
+  app.post("/orders/bulk", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce
-        .number()
-        .int()
-        .parse((req.params as any).id);
+      const items = z.array(createB).min(1).max(1000).parse(req.body);
+      const created = await app.prisma.$transaction(
+        items.map((d) => app.prisma.order.create({ data: d }))
+      );
+      return reply.code(201).send({ inserted: created.length });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
+      app.log.error({ err }, "POST /orders/bulk failed");
+      return reply.code(500).send({ error: "BulkCreateOrdersFailed" });
+    }
+  });
+
+  // ========= Update =========
+  const patchB = createB.partial().extend({
+    status: z
+      .enum(["PENDING", "ASSIGNED", "IN_ROUTE", "DELIVERED", "FAILED", "CANCELED"])
+      .optional(),
+  });
+
+  app.patch("/orders/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
+      const id = z.coerce.number().int().parse((req.params as any).id);
       const data = patchB.parse(req.body);
       const order = await app.prisma.order.update({ where: { id }, data });
       return { ok: true, id: order.id };
-    } catch (err) {
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
       app.log.error({ err }, "PATCH /orders/:id failed");
-      return reply.code(500).send({ error: "Update order failed" });
+      return reply.code(500).send({ error: "UpdateOrderFailed" });
     }
   });
 }

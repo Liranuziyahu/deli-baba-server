@@ -6,7 +6,7 @@ import { z } from "zod";
 export default async function authRoutes(app: FastifyInstance) {
   const prisma = app.prisma;
 
-  // 🧩 סכימות ולידציה עם Zod
+  //סכימות ולידציה עם Zod
   const registerB = z.object({
     email: z.string().email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -18,7 +18,7 @@ export default async function authRoutes(app: FastifyInstance) {
     password: z.string().min(1, "Password is required"),
   });
 
-  // 🧠 Register
+  //Register
   app.post("/auth/register", async (req, reply) => {
     try {
       const { email, password, name } = registerB.parse(req.body);
@@ -41,7 +41,7 @@ export default async function authRoutes(app: FastifyInstance) {
     }
   });
 
-  // 🔐 Login
+  //Login
   app.post("/auth/login", async (req, reply) => {
     try {
       const { email, password } = loginB.parse(req.body);
@@ -62,7 +62,7 @@ export default async function authRoutes(app: FastifyInstance) {
     }
   });
 
-  // 👤 Authenticated user info
+  //Authenticated user info
   app.get("/auth/me", { preHandler: [app.authenticate] }, async (req) => {
     return req.user;
   });

@@ -1,8 +1,9 @@
+// apps/api/src/routes/users.ts
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 export default async function usersRoutes(app: FastifyInstance) {
-  // ========= List (עם חיפוש/עימוד/סינון לפי role) =========
+  // ========= List =========
   const listQ = z.object({
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -12,10 +13,8 @@ export default async function usersRoutes(app: FastifyInstance) {
     order: z.enum(["asc", "desc"]).default("desc"),
   });
 
-  app.get(
-    "/users",
-    { preHandler: [app.authenticate] }, // ✅ כאן ההגנה
-    async (req) => {
+  app.get("/users", { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
       const { page, pageSize, search, role, sort, order } = listQ.parse(req.query);
 
       const where: any = {};
@@ -40,30 +39,41 @@ export default async function usersRoutes(app: FastifyInstance) {
       ]);
 
       return { page, pageSize, total, items };
-    }
-  );
+    } catch (err: any) {
+      if (err instanceof z.ZodError)
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
-  // ========= Get by id =========
+      app.log.error({ err }, "GET /users failed");
+      return reply.code(500).send({ error: "ListUsersFailed" });
+    }
+  });
+
+  // ========= Get by ID =========
   app.get("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
-    const id = z.coerce
-      .number()
-      .int()
-      .parse((req.params as any).id);
-    const user = await app.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, fullName: true, role: true, createdAt: true, driver: true },
-    });
-    if (!user) return reply.code(404).send({ error: "User not found" });
-    return user;
+    try {
+      const id = z.coerce.number().int().parse((req.params as any).id);
+
+      const user = await app.prisma.user.findUnique({
+        where: { id },
+        select: { id: true, email: true, fullName: true, role: true, createdAt: true, driver: true },
+      });
+      if (!user) return reply.code(404).send({ error: "UserNotFound" });
+      return user;
+    } catch (err: any) {
+      if (err instanceof z.ZodError)
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+
+      app.log.error({ err }, "GET /users/:id failed");
+      return reply.code(500).send({ error: "GetUserFailed" });
+    }
   });
 
   // ========= Create =========
   const createB = z.object({
     email: z.string().email(),
     fullName: z.string().min(2),
-    password: z.string().min(4), // dev only; החלף ב-hash בפרודקשן
+    password: z.string().min(4),
     role: z.enum(["ADMIN", "DISPATCHER", "DRIVER", "VIEWER"]).default("VIEWER"),
-    // אופציונלי: יצירת Driver צמוד לאותו User
     createDriver: z
       .object({
         phone: z.string().optional(),
@@ -74,13 +84,13 @@ export default async function usersRoutes(app: FastifyInstance) {
   });
 
   app.post("/users", { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { email, fullName, password, role, createDriver } = createB.parse(req.body);
     try {
+      const { email, fullName, password, role, createDriver } = createB.parse(req.body);
+
       const user = await app.prisma.user.create({
         data: { email, fullName, role, passwordHash: password },
       });
 
-      // אופציונלי: ליצור Driver שמקושר ל-User
       if (createDriver) {
         await app.prisma.driver.create({
           data: {
@@ -93,15 +103,19 @@ export default async function usersRoutes(app: FastifyInstance) {
       }
 
       return reply.code(201).send({ id: user.id });
-    } catch (e: any) {
-      if (e.code === "P2002") {
-        return reply.code(409).send({ error: "Email already exists" });
-      }
-      throw e;
+    } catch (err: any) {
+      if (err instanceof z.ZodError)
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+
+      if (err.code === "P2002")
+        return reply.code(409).send({ error: "EmailAlreadyExists" });
+
+      app.log.error({ err }, "POST /users failed");
+      return reply.code(500).send({ error: "CreateUserFailed" });
     }
   });
 
-  // ========= Update (partial) =========
+  // ========= Update =========
   const patchB = z.object({
     fullName: z.string().min(2).optional(),
     role: z.enum(["ADMIN", "DISPATCHER", "DRIVER", "VIEWER"]).optional(),
@@ -109,13 +123,10 @@ export default async function usersRoutes(app: FastifyInstance) {
   });
 
   app.patch("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
-    const id = z.coerce
-      .number()
-      .int()
-      .parse((req.params as any).id);
-    const data = patchB.parse(req.body);
-
     try {
+      const id = z.coerce.number().int().parse((req.params as any).id);
+      const data = patchB.parse(req.body);
+
       const user = await app.prisma.user.update({
         where: { id },
         data: {
@@ -125,25 +136,35 @@ export default async function usersRoutes(app: FastifyInstance) {
         },
         select: { id: true },
       });
+
       return { ok: true, id: user.id };
-    } catch (e: any) {
-      if (e.code === "P2025") return reply.code(404).send({ error: "User not found" });
-      throw e;
+    } catch (err: any) {
+      if (err instanceof z.ZodError)
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+
+      if (err.code === "P2025")
+        return reply.code(404).send({ error: "UserNotFound" });
+
+      app.log.error({ err }, "PATCH /users/:id failed");
+      return reply.code(500).send({ error: "UpdateUserFailed" });
     }
   });
 
   // ========= Delete =========
   app.delete("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
-    const id = z.coerce
-      .number()
-      .int()
-      .parse((req.params as any).id);
     try {
+      const id = z.coerce.number().int().parse((req.params as any).id);
       await app.prisma.user.delete({ where: { id } });
       return reply.code(204).send();
-    } catch (e: any) {
-      if (e.code === "P2025") return reply.code(404).send({ error: "User not found" });
-      throw e;
+    } catch (err: any) {
+      if (err instanceof z.ZodError)
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+
+      if (err.code === "P2025")
+        return reply.code(404).send({ error: "UserNotFound" });
+
+      app.log.error({ err }, "DELETE /users/:id failed");
+      return reply.code(500).send({ error: "DeleteUserFailed" });
     }
   });
 }
