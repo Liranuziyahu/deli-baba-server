@@ -22,14 +22,14 @@ Working API with connected database and generated Swagger documentation.
 Implement secure user authentication and base management endpoints.
 
 ### 🧩 Tasks:
-- [ ] Add JWT Auth:
-  - [ ] `POST /auth/register`
-  - [ ] `POST /auth/login`
-  - [ ] `GET /auth/me`
-- [ ] Create authentication middleware for protected routes
-- [ ] Full CRUD for **Users** (create, update, delete)
-- [ ] Full CRUD for **Drivers**
-- [ ] Update Swagger with new endpoints
+- [x] Add JWT Auth:
+  - [x] `POST /auth/register`
+  - [x] `POST /auth/login`
+  - [x] `GET /auth/me`
+- [x] Create authentication middleware for protected routes
+- [x] Full CRUD for **Users** (create, update, delete)
+- [x] Full CRUD for **Drivers**
+- [x] Update Swagger with new endpoints
 - [ ] Add validation with **Zod** for all inputs
 
 **Deliverable:**  
