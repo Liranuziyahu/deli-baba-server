@@ -14,16 +14,21 @@
     "openapi:validate": "node scripts/validate-openapi.js"
   },
   "dependencies": {
-    "@fastify/cors": "^8.5.0",
-    "@fastify/swagger": "^8.15.0",
-    "@fastify/swagger-ui": "^1.10.2",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/jwt": "^10.0.0",
+    "@fastify/swagger": "^9.5.2",
+    "@fastify/swagger-ui": "^5.2.3",
     "@prisma/client": "^5.19.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.5",
-    "fastify": "^4.28.1",
+    "fastify": "^5.6.1",
+    "fastify-plugin": "^5.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^20.14.10",
     "postman-collection": "^5.2.0",
     "postman-to-openapi": "^3.0.1",

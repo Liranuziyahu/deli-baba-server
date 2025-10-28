@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export default async function routeStopsRoutes(app: FastifyInstance) {
   // ========= Update stop status =========
-  app.patch("/routes/:routeId/stops/:stopId/status", async (req, reply) => {
+  app.patch("/routes/:routeId/stops/:stopId/status",{preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { routeId, stopId } = z.object({
         routeId: z.coerce.number().int().positive(),
@@ -51,7 +51,7 @@ export default async function routeStopsRoutes(app: FastifyInstance) {
   });
 
   // ========= Resequence stops =========
-  app.post("/routes/:routeId/stops/resequence", async (req, reply) => {
+  app.post("/routes/:routeId/stops/resequence",{preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { routeId } = z.object({
         routeId: z.coerce.number().int().positive(),
@@ -90,7 +90,7 @@ export default async function routeStopsRoutes(app: FastifyInstance) {
   });
 
   // ========= Unassign order from route (delete RouteStop) =========
-  app.delete("/routes/:routeId/stops/:stopId", async (req, reply) => {
+  app.delete("/routes/:routeId/stops/:stopId",{preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { routeId, stopId } = z.object({
         routeId: z.coerce.number().int().positive(),

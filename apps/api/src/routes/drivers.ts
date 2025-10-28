@@ -23,7 +23,7 @@ export default async function driversRoutes(app: FastifyInstance) {
     search: z.string().trim().optional(),
   });
 
-  app.get("/drivers", async (req, reply) => {
+  app.get("/drivers", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { page, pageSize, active, search } = listQ.parse(req.query);
 
@@ -32,10 +32,7 @@ export default async function driversRoutes(app: FastifyInstance) {
       if (active !== undefined) where.active = active;
       if (search && search.length > 0) {
         where.user = {
-          OR: [
-            { fullName: { contains: search } },
-            { email: { contains: search } },
-          ],
+          OR: [{ fullName: { contains: search } }, { email: { contains: search } }],
         };
       }
 
@@ -60,9 +57,13 @@ export default async function driversRoutes(app: FastifyInstance) {
   });
 
   // ========= Get by id =========
-  app.get("/drivers/:id", async (req, reply) => {
+  app.get("/drivers/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().positive().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .positive()
+        .parse((req.params as any).id);
 
       const driver = await app.prisma.driver.findUnique({
         where: { id },
@@ -92,7 +93,7 @@ export default async function driversRoutes(app: FastifyInstance) {
     capacity: z.coerce.number().int().positive().optional(),
   });
 
-  app.post("/drivers", async (req, reply) => {
+  app.post("/drivers", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { userId, phone, vehicle, capacity } = createB.parse(req.body);
 
@@ -118,18 +119,24 @@ export default async function driversRoutes(app: FastifyInstance) {
   });
 
   // ========= Update =========
-  const patchB = z.object({
-    phone: z.string().trim().optional(),
-    vehicle: z.string().trim().optional(),
-    capacity: z.coerce.number().int().positive().optional(),
-    active: z.boolean().optional(),
-  }).refine(d => Object.values(d).some(v => v !== undefined), {
-    message: "No fields to update",
-  });
+  const patchB = z
+    .object({
+      phone: z.string().trim().optional(),
+      vehicle: z.string().trim().optional(),
+      capacity: z.coerce.number().int().positive().optional(),
+      active: z.boolean().optional(),
+    })
+    .refine((d) => Object.values(d).some((v) => v !== undefined), {
+      message: "No fields to update",
+    });
 
-  app.patch("/drivers/:id", async (req, reply) => {
+  app.patch("/drivers/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().positive().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .positive()
+        .parse((req.params as any).id);
       const data = patchB.parse(req.body);
 
       const driver = await app.prisma.driver.update({
@@ -149,9 +156,13 @@ export default async function driversRoutes(app: FastifyInstance) {
   });
 
   // ========= Delete =========
-  app.delete("/drivers/:id", async (req, reply) => {
+  app.delete("/drivers/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().positive().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .positive()
+        .parse((req.params as any).id);
 
       await app.prisma.driver.delete({ where: { id } });
       return reply.code(204).send();
