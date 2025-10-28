@@ -102,5 +102,5 @@ Production-ready, tested, and deployed Deli-Baba system.
 
 ---
 
-**Last Updated:** (https://img.shields.io/github/last-commit/Liranuziyahu/deli-baba-server?label=Last%20Updated)
+ ![Last Updated](https://img.shields.io/github/last-commit/Liranuziyahu/deli-baba-server?label=Last%20Updated)
 
