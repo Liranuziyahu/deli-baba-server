@@ -95,10 +95,10 @@ Production-ready, tested, and deployed Deli-Baba system.
 | Sprint | Period | Focus | Status |
 |---------|---------|--------|--------|
 | 1 | Completed | Infrastructure & DB Setup | ✅ Done |
-| 2 | Current | Auth + CRUD | ✅ Done |
-| 3 | Next Week | Route Optimization | ⏳ Planned |
-| 4 | Following Week | Frontend Dashboard | ⏳ Planned |
-| 5 | Optional | Testing & Deployment | ⏳ Planned |
+| 2 | Completed | Auth + CRUD | ✅ Done |
+| 3 | Current | Route Optimization | ⏳ Planned |
+| 4 | Next Week | Frontend Dashboard | ⏳ Planned |
+| 5 | Following Week | Testing & Deployment | ⏳ Planned |
 
 ---
 
