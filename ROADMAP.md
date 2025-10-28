@@ -95,19 +95,10 @@ Production-ready, tested, and deployed Deli-Baba system.
 | Sprint | Period | Focus | Status |
 |---------|---------|--------|--------|
 | 1 | Completed | Infrastructure & DB Setup | ✅ Done |
-| 2 | Current | Auth + CRUD | 🏗 In Progress |
+| 2 | Current | Auth + CRUD | ✅ Done |
 | 3 | Next Week | Route Optimization | ⏳ Planned |
 | 4 | Following Week | Frontend Dashboard | ⏳ Planned |
 | 5 | Optional | Testing & Deployment | ⏳ Planned |
-
----
-
-## 🧠 Productivity Tips
-- Mark at least one ✅ task per day.  
-- Keep Swagger updated with every API change.  
-- Use separate `.env` for production.  
-- Commit only meaningful chunks (not every line).  
-- Verify Docker containers before each push.  
 
 ---
 
