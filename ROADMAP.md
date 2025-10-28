@@ -30,7 +30,7 @@ Implement secure user authentication and base management endpoints.
 - [x] Full CRUD for **Users** (create, update, delete)
 - [x] Full CRUD for **Drivers**
 - [x] Update Swagger with new endpoints
-- [ ] Add validation with **Zod** for all inputs
+- [x] Add validation with **Zod** for all inputs
 
 **Deliverable:**  
 Secure authentication + user and driver management via API & Swagger.
