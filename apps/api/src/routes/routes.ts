@@ -25,7 +25,9 @@ export default async function routesRoutes(app: FastifyInstance) {
         });
       }
 
-      const result = optimizeRoute(points, startId);
+      const result = await optimizeRoute(points, startId);
+      console.log("result",result);
+      
       return reply.send(result);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
