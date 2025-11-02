@@ -1,6 +1,7 @@
 // apps/api/src/routes/routes.ts
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { optimizeInput, optimizeRoute } from "../services/routeOptimizer";
 
 export default async function routesRoutes(app: FastifyInstance) {
   // ========= Create route =========
@@ -10,6 +11,29 @@ export default async function routesRoutes(app: FastifyInstance) {
     orderIds: z.array(z.number().int().positive()).min(1),
     distanceKm: z.number().nonnegative().optional(),
     durationMin: z.number().int().nonnegative().optional(),
+  });
+
+  app.post("/routes/optimize", { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
+      const { points, startId } = optimizeInput.parse(req.body);
+      
+      // ✅ בדיקה אם startId קיים בתוך רשימת הנקודות
+      if (startId && !points.some((p) => p.id === startId)) {
+        return reply.code(400).send({
+          error: "InvalidStartId",
+          message: "startId must match one of the provided points' IDs",
+        });
+      }
+
+      const result = optimizeRoute(points, startId);
+      return reply.send(result);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.status(400).send({ error: "ValidationError", issues: err.errors });
+      }
+      app.log.error({ err }, "POST /routes/optimize failed");
+      return reply.status(500).send({ error: "OptimizeRouteFailed" });
+    }
   });
 
   app.post("/routes/create", { preHandler: [app.authenticate] }, async (req, reply) => {
@@ -24,12 +48,10 @@ export default async function routesRoutes(app: FastifyInstance) {
         select: { id: true, routeStop: true },
       });
 
-      if (orders.length !== orderIds.length)
-        return reply.code(400).send({ error: "SomeOrdersNotFound" });
+      if (orders.length !== orderIds.length) return reply.code(400).send({ error: "SomeOrdersNotFound" });
 
       const assigned = orders.filter((o) => o.routeStop);
-      if (assigned.length)
-        return reply.code(400).send({ error: "AlreadyAssigned", ids: assigned.map((o) => o.id) });
+      if (assigned.length) return reply.code(400).send({ error: "AlreadyAssigned", ids: assigned.map((o) => o.id) });
 
       const route = await app.prisma.route.create({
         data: {
@@ -46,8 +68,7 @@ export default async function routesRoutes(app: FastifyInstance) {
       await app.prisma.order.updateMany({ where: { id: { in: orderIds } }, data: { status: "ASSIGNED" } });
       return reply.code(201).send({ id: route.id, stops: route.stops.length, route });
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
       app.log.error({ err }, "POST /routes/create failed");
       return reply.code(500).send({ error: "CreateRouteFailed" });
@@ -57,7 +78,11 @@ export default async function routesRoutes(app: FastifyInstance) {
   // ========= Assign orders to existing route =========
   app.post("/routes/:id/assign", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const routeId = z.coerce.number().int().positive().parse((req.params as any).id);
+      const routeId = z.coerce
+        .number()
+        .int()
+        .positive()
+        .parse((req.params as any).id);
       const { orderIds } = z
         .object({
           orderIds: z.array(z.number().int().positive()).min(1).max(1000),
@@ -69,8 +94,7 @@ export default async function routesRoutes(app: FastifyInstance) {
         select: { id: true, status: true },
       });
       if (!route) return reply.code(404).send({ error: "RouteNotFound" });
-      if (route.status === "COMPLETED")
-        return reply.code(400).send({ error: "RouteCompleted" });
+      if (route.status === "COMPLETED") return reply.code(400).send({ error: "RouteCompleted" });
 
       const orders = await app.prisma.order.findMany({
         where: { id: { in: orderIds } },
@@ -126,11 +150,9 @@ export default async function routesRoutes(app: FastifyInstance) {
         stops: result.stops,
       });
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
-      if (err?.code === "P2002")
-        return reply.code(409).send({ error: "OrderAlreadyAssigned" });
+      if (err?.code === "P2002") return reply.code(409).send({ error: "OrderAlreadyAssigned" });
 
       app.log.error({ err }, "POST /routes/:id/assign failed");
       return reply.code(500).send({ error: "AssignOrdersToRouteFailed" });
@@ -163,8 +185,7 @@ export default async function routesRoutes(app: FastifyInstance) {
       });
       return { items };
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
       app.log.error({ err }, "GET /routes failed");
       return reply.code(500).send({ error: "ListRoutesFailed" });
@@ -174,7 +195,10 @@ export default async function routesRoutes(app: FastifyInstance) {
   // ========= Get route by ID =========
   app.get("/routes/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .parse((req.params as any).id);
       const route = await app.prisma.route.findUnique({
         where: { id },
         include: {
@@ -185,8 +209,7 @@ export default async function routesRoutes(app: FastifyInstance) {
       if (!route) return reply.code(404).send({ error: "RouteNotFound" });
       return route;
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
       app.log.error({ err }, "GET /routes/:id failed");
       return reply.code(500).send({ error: "GetRouteFailed" });
@@ -196,7 +219,10 @@ export default async function routesRoutes(app: FastifyInstance) {
   // ========= Update route status =========
   app.patch("/routes/:id/status", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .parse((req.params as any).id);
       const body = z
         .object({
           status: z.enum(["PLANNED", "IN_PROGRESS", "COMPLETED"]),
@@ -210,8 +236,7 @@ export default async function routesRoutes(app: FastifyInstance) {
       const route = await app.prisma.route.update({ where: { id }, data });
       return { ok: true, id: route.id, status: route.status };
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
       app.log.error({ err }, "PATCH /routes/:id/status failed");
       return reply.code(500).send({ error: "UpdateRouteStatusFailed" });
