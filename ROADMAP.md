@@ -1,151 +1,136 @@
-🧭 Updated Project Roadmap
-🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
-🎯 Goals:
+# 🗺️ Deli-Baba Roadmap
 
-Set up full development environment (Backend + DB + Swagger)
+---
 
-Build a stable and secure API foundation
+## 🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
 
-✅ Tasks:
+### 🎯 Goals
+Set up full development environment (Backend + DB + Swagger)  
+and build a stable and secure API foundation.
 
- Installed Fastify + Prisma + Zod
+### ✅ Tasks
+- [x] Installed **Fastify + Prisma + Zod**
+- [x] Connected **MySQL & Redis** via Docker Compose
+- [x] Created `.env` file and hid secrets from Git
+- [x] Built **Postman → OpenAPI** generation script
+- [x] Integrated **Swagger (static mode)**
+- [x] Verified **Prisma Studio (`localhost:5555`)**
+- [x] Cleaned GitGuardian findings (ignore, rebase)
 
- Connected MySQL & Redis via Docker Compose
-
- Created .env file and hid secrets from Git
-
- Built Postman → OpenAPI script
-
- Integrated Swagger (static mode)
-
- Verified Prisma Studio (localhost:5555)
-
- Cleaned GitGuardian findings (ignore, rebase)
-
-Deliverable:
+**Deliverable:**  
 Working API with connected database and generated Swagger documentation.
 
-🔐 Sprint 2 – Authentication & Basic CRUD ✅ (Completed)
-🎯 Goals:
+---
 
+## 🔐 Sprint 2 – Authentication & Basic CRUD ✅ (Completed)
+
+### 🎯 Goals
 Implement secure user authentication and base management endpoints.
 
-🧩 Tasks:
+### 🧩 Tasks
+- [x] Added **JWT Auth**
+  - [x] `POST /auth/register`
+  - [x] `POST /auth/login`
+  - [x] `GET /auth/me`
+- [x] Created authentication middleware for protected routes
+- [x] Full CRUD for **Users**
+- [x] Full CRUD for **Drivers**
+- [x] Validation with **Zod**
+- [x] Updated **Swagger** documentation
 
- Add JWT Auth (register, login, me)
-
- Middleware for route protection
-
- Full CRUD for Users + Drivers
-
- Validation via Zod
-
- Swagger updated with Auth schema
-
-Deliverable:
+**Deliverable:**  
 Secure authentication + user and driver management via API & Swagger.
 
-📦 Sprint 3 – Orders, Routes & Optimization ✅ (Completed)
-🎯 Goals:
+---
 
+## 📦 Sprint 3 – Orders, Routes & Optimization ✅ (Completed)
+
+### 🎯 Goals
 Implement the core logistics logic with smart routing.
 
-🧩 Tasks:
+### 🧩 Tasks
+- [x] CRUD for **Orders**
+- [x] Full management for **Routes** and **Stops**
+- [x] **Route Optimization Service**
+  - [x] Google Maps Distance Matrix integration  
+  - [x] Smart order sequencing based on driver start location  
+  - [x] ETA calculation for each stop  
+  - [x] Redis caching for distances  
+- [x] Added **Rate Limiter + CORS Protection**
+- [x] Updated Swagger for all endpoints
 
- CRUD for Orders
-
- Manage Routes and Stops
-
- Google Distance API integration
-
- Smart Route Optimization
-
- Driver start-location aware
-
- Distance + Duration calculation
-
- ETA per stop (etaMin)
-
- Redis caching for distances
-
- Rate Limit + CORS protection
-
- Swagger updated for all endpoints
-
-Deliverable:
+**Deliverable:**  
 Optimized, production-grade routing engine with distance & ETA tracking.
 
-⚙️ Sprint 4 – System Monitoring & Health (In Progress)
-🎯 Goals:
+---
 
-Add observability, performance monitoring, and API stability tools.
+## ⚙️ Sprint 4 – System Monitoring & Health 🚧 (In Progress)
 
-🧩 Tasks:
+### 🎯 Goals
+Add observability, performance monitoring, and system reliability tools.
 
- Add /system/health endpoint
-→ Returns DB, Redis, and Google API connection status
+### 🧩 Tasks
+- [ ] Add `/system/health` endpoint  
+  → Returns DB, Redis, and Google API connection status
+- [x] Add `/system/usage` endpoint  
+  → Returns API usage stats from Redis  
+- [x] Improved internal logging (`app.log.info`, `warn`, `error`)
+- [ ] Add **Winston/Pino** transport for persistent logs
+- [ ] Include uptime, memory usage, and server version info
 
- Add /system/usage endpoint
-→ Returns API usage stats from Redis
+**Deliverable:**  
+Production-grade monitoring layer with health & analytics endpoints.
 
- Setup internal logs (app.log.info, error, warn)
+---
 
- Add Winston / Pino transport for log persistence
+## 🗺 Sprint 5 – Frontend Dashboard + Map ⏳ (Planned)
 
- Add uptime info + server version
+### 🎯 Goals
+Develop a modern dashboard for admins and drivers with live map visualization.
 
-Deliverable:
-Production-grade monitoring layer and reliability endpoints for uptime & analytics.
+### 🧩 Tasks
+- [ ] Initialize `apps/web` (React + Tailwind)
+- [ ] Build Login / Register pages
+- [ ] Create Dashboard with statistics (Users, Orders, Routes)
+- [ ] Integrate API via Axios or React Query
+- [ ] Display delivery routes on **Google Maps / Leaflet**
+- [ ] Add live route tracking (real-time driver status)
 
-🗺 Sprint 5 – Frontend Dashboard + Map (Next)
-🎯 Goals:
+**Deliverable:**  
+Fully functional dashboard for managers & drivers with live route visualization.
 
-Develop a management dashboard and driver view with live map integration.
+---
 
-🧩 Tasks:
+## 🧾 Sprint 6 – Testing & Deployment ⏳ (Planned)
 
- Initialize apps/web (React + Tailwind)
+### 🎯 Goals
+Stabilize and prepare the full system for production deployment.
 
- Login / Register UI
+### 🧩 Tasks
+- [ ] Unit tests (Jest / Vitest)
+- [ ] Integration tests (Fastify inject)
+- [ ] Dockerfile for API build
+- [ ] CI/CD pipeline for automatic deployments
+- [ ] Deploy **API** → Railway / Fly.io / Render
+- [ ] Deploy **Frontend** → Vercel / Netlify
+- [ ] Secure `.env.production` configuration
 
- Dashboard with statistics (Users, Orders, Routes)
+**Deliverable:**  
+Production-ready, tested, and deployed Deli-Baba system.
 
- Integrate API via Axios / React Query
+---
 
- Google Maps visualization
+## 📈 Sprint Progress Overview
 
- Live route tracking for drivers
+| Sprint | Focus | Status |
+|:------:|:------|:------:|
+| 1 | Infrastructure & DB Setup | ✅ Done |
+| 2 | Auth + CRUD | ✅ Done |
+| 3 | Route Optimization | ✅ Done |
+| 4 | Health & Monitoring | 🚧 In Progress |
+| 5 | Frontend Dashboard | ⏳ Planned |
+| 6 | Testing & Deployment | ⏳ Planned |
 
-Deliverable:
-Admin dashboard and driver interface with route map & status updates.
+---
 
-🧾 Sprint 6 – Testing & Deployment (Next)
-🎯 Goals:
-
-Stabilize, monitor, and deploy for production.
-
-🧩 Tasks:
-
- Unit + Integration tests
-
- Docker build pipeline
-
- .env.production handling
-
- CI/CD integration
-
- Deploy Backend (Railway / Fly.io)
-
- Deploy Frontend (Vercel / Netlify)
-
-Deliverable:
-Production-ready deployment with monitoring and testing coverage.
-
-📈 Sprint Progress Overview
-Sprint	Period	Focus	Status
-1	Completed	Infrastructure & DB Setup	✅ Done
-2	Completed	Auth + CRUD	✅ Done
-3	Completed	Route Optimization	✅ Done
-4	Current	Health & Monitoring	🚧 In Progress
-5	Next	Frontend Dashboard	⏳ Planned
-6	Following	Testing & Deployment	⏳ Planned
+![Last Updated](https://img.shields.io/github/last-commit/Liranuziyahu/deli-baba-server?label=Last%20Updated)
