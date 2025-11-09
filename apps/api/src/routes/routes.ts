@@ -1,7 +1,8 @@
 // apps/api/src/routes/routes.ts
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { optimizeInput, optimizeRoute } from "../services/routeOptimizer";
+import { optimizeInput, optimizeRoute } from "../services/geodata/routeOptimizer";
+import { getDistanceKm } from "../services/geodata/distance.service";
 
 export default async function routesRoutes(app: FastifyInstance) {
   // ========= Create route =========
@@ -12,11 +13,10 @@ export default async function routesRoutes(app: FastifyInstance) {
     distanceKm: z.number().nonnegative().optional(),
     durationMin: z.number().int().nonnegative().optional(),
   });
-
   app.post("/routes/optimize", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { points, startId } = optimizeInput.parse(req.body);
-      
+
       // ✅ בדיקה אם startId קיים בתוך רשימת הנקודות
       if (startId && !points.some((p) => p.id === startId)) {
         return reply.code(400).send({
@@ -26,8 +26,6 @@ export default async function routesRoutes(app: FastifyInstance) {
       }
 
       const result = await optimizeRoute(points, startId);
-      console.log("result",result);
-      
       return reply.send(result);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -40,14 +38,31 @@ export default async function routesRoutes(app: FastifyInstance) {
 
   app.post("/routes/create", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const { driverId, serviceDate, orderIds, distanceKm, durationMin } = createB.parse(req.body);
+      const createB = z.object({
+        driverId: z.number().int().positive(),
+        serviceDate: z.coerce.date().default(() => new Date()),
+        orderIds: z.array(z.number().int().positive()).min(1),
+        distanceKm: z.number().nonnegative().optional(),
+        durationMin: z.number().int().nonnegative().optional(),
+        optimize: z.boolean().optional().default(false),
+        startLocation: z
+          .object({
+            lat: z.number(),
+            lng: z.number(),
+          })
+          .optional(),
+      });
+
+      const { driverId, serviceDate, orderIds, distanceKm, durationMin, optimize, startLocation } = createB.parse(
+        req.body
+      );
 
       const driver = await app.prisma.driver.findUnique({ where: { id: driverId } });
       if (!driver) return reply.code(400).send({ error: "DriverNotFound" });
 
       const orders = await app.prisma.order.findMany({
         where: { id: { in: orderIds } },
-        select: { id: true, routeStop: true },
+        select: { id: true, lat: true, lng: true, routeStop: true },
       });
 
       if (orders.length !== orderIds.length) return reply.code(400).send({ error: "SomeOrdersNotFound" });
@@ -55,20 +70,121 @@ export default async function routesRoutes(app: FastifyInstance) {
       const assigned = orders.filter((o) => o.routeStop);
       if (assigned.length) return reply.code(400).send({ error: "AlreadyAssigned", ids: assigned.map((o) => o.id) });
 
+      // 🧭 אם ביקשו optimize: true → נחשב סדר אופטימלי לפי נקודות
+      let finalOrderIds = [...orderIds];
+      let totalDistanceKm = distanceKm || 0;
+      let totalDurationMin = durationMin || 0;
+      const etaMap: Record<number, number> = {}; // ✅ הוזז למעלה כדי שיהיה גלובלי לסקופ
+
+      if (optimize) {
+        const points = orders
+          .filter((o) => o.lat && o.lng)
+          .map((o) => ({
+            id: o.id,
+            lat: Number(o.lat),
+            lng: Number(o.lng),
+          }));
+
+        if (points.length >= 2) {
+          let startId: number | undefined;
+
+          // ✅ אם יש startLocation – נחשב מי הנקודה הקרובה ביותר לשליח
+          if (startLocation) {
+            const start = startLocation;
+            let nearest = points[0];
+            let nearestDist = Infinity;
+
+            for (const p of points) {
+              const dLat = ((p.lat - start.lat) * Math.PI) / 180;
+              const dLng = ((p.lng - start.lng) * Math.PI) / 180;
+              const a =
+                Math.sin(dLat / 2) ** 2 +
+                Math.cos((start.lat * Math.PI) / 180) * Math.cos((p.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+              const dist = 6371 * c;
+
+              if (dist < nearestDist) {
+                nearest = p;
+                nearestDist = dist;
+              }
+            }
+
+            startId = nearest.id;
+            app.log.info(`🚗 Closest stop to driver is orderId=${startId} (≈${nearestDist.toFixed(2)} km away)`);
+          }
+
+          // קריאה לאופטימיזציה בפועל (כולל זמן כולל)
+          const result = await optimizeRoute(points, startId);
+          finalOrderIds = result.optimizedOrder;
+          totalDistanceKm = result.totalDistanceKm;
+          totalDurationMin = result.totalDurationMin;
+
+          app.log.info({
+            msg: "🧭 Route optimized",
+            ordersBefore: orderIds,
+            optimizedOrder: finalOrderIds,
+            totalDistanceKm,
+            totalDurationMin,
+          });
+
+          // ✅ חישוב ETA מצטבר לפי מרחק
+          const AVERAGE_SPEED_KMH = 35;
+          const minutesPerKm = 60 / AVERAGE_SPEED_KMH;
+          let cumulativeKm = 0;
+
+          for (let i = 1; i < finalOrderIds.length; i++) {
+            const prev = orders.find((o) => o.id === finalOrderIds[i - 1]);
+            const next = orders.find((o) => o.id === finalOrderIds[i]);
+            if (prev && next && prev.lat && prev.lng && next.lat && next.lng) {
+              const segment = await getDistanceKm(
+                { lat: Number(prev.lat), lng: Number(prev.lng) },
+                { lat: Number(next.lat), lng: Number(next.lng) }
+              );
+              cumulativeKm += segment;
+              etaMap[next.id] = Math.round(cumulativeKm * minutesPerKm);
+            }
+          }
+
+          app.log.info({ msg: "🕒 ETA calculated for route", etaMap });
+        } else {
+          app.log.warn("⚠️ Not enough geo points for optimization – using given order.");
+        }
+      }
+
+      // ✅ יצירת המסלול עם ETA לכל נקודה
       const route = await app.prisma.route.create({
         data: {
           driverId,
           serviceDate,
-          distanceKm,
-          durationMin,
+          distanceKm: totalDistanceKm,
+          durationMin: Math.round(totalDurationMin),
           status: "PLANNED",
-          stops: { create: orderIds.map((orderId, i) => ({ orderId, seq: i + 1, status: "PENDING" })) },
+          stops: {
+            create: finalOrderIds.map((orderId, i) => ({
+              orderId,
+              seq: i + 1,
+              status: "PENDING",
+              etaMin: etaMap[orderId] || 0, // ✅ ETA לפי המרחק המצטבר
+            })),
+          },
         },
-        include: { stops: { orderBy: { seq: "asc" }, include: { order: true } }, driver: { include: { user: true } } },
+        include: {
+          stops: { orderBy: { seq: "asc" }, include: { order: true } },
+          driver: { include: { user: true } },
+        },
       });
 
-      await app.prisma.order.updateMany({ where: { id: { in: orderIds } }, data: { status: "ASSIGNED" } });
-      return reply.code(201).send({ id: route.id, stops: route.stops.length, route });
+      await app.prisma.order.updateMany({
+        where: { id: { in: finalOrderIds } },
+        data: { status: "ASSIGNED" },
+      });
+
+      return reply.code(201).send({
+        id: route.id,
+        optimized: optimize,
+        stops: route.stops.length,
+        route,
+      });
     } catch (err: any) {
       if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 

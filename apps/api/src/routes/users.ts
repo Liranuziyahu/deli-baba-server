@@ -1,6 +1,7 @@
 // apps/api/src/routes/users.ts
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import bcrypt from "bcryptjs"; // 🧩 נוסיף בראש הקובץ
 
 export default async function usersRoutes(app: FastifyInstance) {
   // ========= List =========
@@ -40,8 +41,7 @@ export default async function usersRoutes(app: FastifyInstance) {
 
       return { page, pageSize, total, items };
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
       app.log.error({ err }, "GET /users failed");
       return reply.code(500).send({ error: "ListUsersFailed" });
@@ -51,7 +51,10 @@ export default async function usersRoutes(app: FastifyInstance) {
   // ========= Get by ID =========
   app.get("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .parse((req.params as any).id);
 
       const user = await app.prisma.user.findUnique({
         where: { id },
@@ -60,8 +63,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       if (!user) return reply.code(404).send({ error: "UserNotFound" });
       return user;
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
       app.log.error({ err }, "GET /users/:id failed");
       return reply.code(500).send({ error: "GetUserFailed" });
@@ -86,9 +88,10 @@ export default async function usersRoutes(app: FastifyInstance) {
   app.post("/users", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
       const { email, fullName, password, role, createDriver } = createB.parse(req.body);
+      const hash = await bcrypt.hash(password, 10); // ✅ הצפנה אמיתית
 
       const user = await app.prisma.user.create({
-        data: { email, fullName, role, passwordHash: password },
+        data: { email, fullName, role, passwordHash: hash },
       });
 
       if (createDriver) {
@@ -104,11 +107,9 @@ export default async function usersRoutes(app: FastifyInstance) {
 
       return reply.code(201).send({ id: user.id });
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
-      if (err.code === "P2002")
-        return reply.code(409).send({ error: "EmailAlreadyExists" });
+      if (err.code === "P2002") return reply.code(409).send({ error: "EmailAlreadyExists" });
 
       app.log.error({ err }, "POST /users failed");
       return reply.code(500).send({ error: "CreateUserFailed" });
@@ -123,45 +124,51 @@ export default async function usersRoutes(app: FastifyInstance) {
   });
 
   app.patch("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
-    try {
-      const id = z.coerce.number().int().parse((req.params as any).id);
-      const data = patchB.parse(req.body);
+   try {
+    const id = z.coerce.number().int().parse((req.params as any).id);
+    const data = patchB.parse(req.body);
 
-      const user = await app.prisma.user.update({
-        where: { id },
-        data: {
-          fullName: data.fullName,
-          role: data.role,
-          ...(data.password ? { passwordHash: data.password } : {}),
-        },
-        select: { id: true },
-      });
-
-      return { ok: true, id: user.id };
-    } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
-
-      if (err.code === "P2025")
-        return reply.code(404).send({ error: "UserNotFound" });
-
-      app.log.error({ err }, "PATCH /users/:id failed");
-      return reply.code(500).send({ error: "UpdateUserFailed" });
+    let hash: string | undefined;
+    if (data.password) {
+      hash = await bcrypt.hash(data.password, 10); // ✅ הצפנה גם בעדכון
     }
+
+    const user = await app.prisma.user.update({
+      where: { id },
+      data: {
+        fullName: data.fullName,
+        role: data.role,
+        ...(hash ? { passwordHash: hash } : {}),
+      },
+      select: { id: true },
+    });
+
+    return { ok: true, id: user.id };
+  } catch (err: any) {
+    if (err instanceof z.ZodError)
+      return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+
+    if (err.code === "P2025")
+      return reply.code(404).send({ error: "UserNotFound" });
+
+    app.log.error({ err }, "PATCH /users/:id failed");
+    return reply.code(500).send({ error: "UpdateUserFailed" });
+  }
   });
 
   // ========= Delete =========
   app.delete("/users/:id", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce.number().int().parse((req.params as any).id);
+      const id = z.coerce
+        .number()
+        .int()
+        .parse((req.params as any).id);
       await app.prisma.user.delete({ where: { id } });
       return reply.code(204).send();
     } catch (err: any) {
-      if (err instanceof z.ZodError)
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      if (err instanceof z.ZodError) return reply.code(400).send({ error: "ValidationError", issues: err.errors });
 
-      if (err.code === "P2025")
-        return reply.code(404).send({ error: "UserNotFound" });
+      if (err.code === "P2025") return reply.code(404).send({ error: "UserNotFound" });
 
       app.log.error({ err }, "DELETE /users/:id failed");
       return reply.code(500).send({ error: "DeleteUserFailed" });

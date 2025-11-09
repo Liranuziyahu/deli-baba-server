@@ -7,6 +7,7 @@ import path from "path"; // ✅ נוספה שורה זו
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { FastifyStaticSwaggerOptions } from "@fastify/swagger";
+import rateLimit from "@fastify/rate-limit";
 
 // ROUTES
 import usersRoutes from "./routes/users.ts";
@@ -16,6 +17,9 @@ import routesRoutes from "./routes/routes.ts";
 import routeStopsRoutes from "./routes/routeStops.ts";
 import authPlugin from "./plugins/auth";
 import authRoutes from "./routes/auth";
+import { distanceRoutes } from "./routes/distance.ts";
+import { geocodeRoutes } from "./routes/geocode.ts";
+import { googleUsageRoutes } from "./routes/google-usage.ts"; 
 
 dotenv.config();
 
@@ -30,11 +34,35 @@ declare module "fastify" {
 }
 app.decorate("prisma", new PrismaClient());
 
-// Auth Plugin (JWT)
-await app.register(authPlugin);
 
-// CORS
-await app.register(cors, { origin: true });
+// ==================== 🔒 הגנות ====================
+
+// ✅ CORS – מאפשר גישה רק מדומיינים ספציפיים
+await app.register(cors, {
+  origin: process.env.CORS_ORIGIN?.split(",") || [
+    "http://localhost:3001",
+    "https://deli-baba.com",
+  ],
+  credentials: true,
+});
+
+
+// ✅ Rate Limiter – הגבלת בקשות
+await app.register(rateLimit, {
+  max: 100, // כמות מקסימלית לדקה
+  timeWindow: "1 minute",
+  // אל תפטור את localhost עכשיו בזמן בדיקה
+  errorResponseBuilder: (req, context) => {
+    return {
+      statusCode: 429,
+      success: false,
+      error: "Too many requests, please slow down",
+      limit: context.max,
+      timeWindow: context.timeWindow,
+    };
+  },
+});
+
 
 // 🧩 Swagger (טעינת קובץ OpenAPI קיים + הוספת הגדרות אבטחה ל-UI)
 const openapiPath = path.resolve("openapi", "openapi.yaml");
@@ -84,7 +112,7 @@ app.setErrorHandler((err, req, reply) => {
     return reply.code(400).send({ error: "ValidationError", issues: (err as any).issues });
   }
   req.log.error(err);
-  reply.code(500).send({ error: "InternalError" });
+  reply.code(500).send({ error: `InternalError -${err?.error}` });
 });
 
 // root
@@ -98,12 +126,18 @@ app.get("/", async () => {
   return { ok: true, users, orders, routes, stops };
 });
 
+// Auth Plugin (JWT)
+await app.register(authPlugin);
+
 app.register(authRoutes);
 app.register(usersRoutes);
 app.register(driversRoutes);
 app.register(ordersRoutes);
 app.register(routesRoutes);
 app.register(routeStopsRoutes);
+app.register(distanceRoutes);
+app.register(geocodeRoutes);
+app.register(googleUsageRoutes);
 
 // סגירה נקייה
 app.addHook("onClose", async () => {
