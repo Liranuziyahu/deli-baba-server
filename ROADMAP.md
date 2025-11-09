@@ -1,106 +1,151 @@
-## 🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
-### 🎯 Goals:
-- Set up full development environment (Backend + DB + Swagger)
-- Build a stable and secure API foundation
+🧭 Updated Project Roadmap
+🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
+🎯 Goals:
 
-### ✅ Tasks:
-- [x] Installed Fastify + Prisma + Zod  
-- [x] Connected MySQL & Redis via Docker Compose  
-- [x] Created `.env` file and hid secrets from Git  
-- [x] Built Postman → OpenAPI script  
-- [x] Integrated Swagger (static mode)  
-- [x] Verified Prisma Studio (`localhost:5555`)  
-- [x] Cleaned GitGuardian findings (ignore, rebase)  
+Set up full development environment (Backend + DB + Swagger)
 
-**Deliverable:**  
+Build a stable and secure API foundation
+
+✅ Tasks:
+
+ Installed Fastify + Prisma + Zod
+
+ Connected MySQL & Redis via Docker Compose
+
+ Created .env file and hid secrets from Git
+
+ Built Postman → OpenAPI script
+
+ Integrated Swagger (static mode)
+
+ Verified Prisma Studio (localhost:5555)
+
+ Cleaned GitGuardian findings (ignore, rebase)
+
+Deliverable:
 Working API with connected database and generated Swagger documentation.
 
----
+🔐 Sprint 2 – Authentication & Basic CRUD ✅ (Completed)
+🎯 Goals:
 
-## 🔐 Sprint 2 – Authentication & Basic CRUD 🏗 (Current)
-### 🎯 Goals:
 Implement secure user authentication and base management endpoints.
 
-### 🧩 Tasks:
-- [x] Add JWT Auth:
-  - [x] `POST /auth/register`
-  - [x] `POST /auth/login`
-  - [x] `GET /auth/me`
-- [x] Create authentication middleware for protected routes
-- [x] Full CRUD for **Users** (create, update, delete)
-- [x] Full CRUD for **Drivers**
-- [x] Update Swagger with new endpoints
-- [x] Add validation with **Zod** for all inputs
+🧩 Tasks:
 
-**Deliverable:**  
+ Add JWT Auth (register, login, me)
+
+ Middleware for route protection
+
+ Full CRUD for Users + Drivers
+
+ Validation via Zod
+
+ Swagger updated with Auth schema
+
+Deliverable:
 Secure authentication + user and driver management via API & Swagger.
 
----
+📦 Sprint 3 – Orders, Routes & Optimization ✅ (Completed)
+🎯 Goals:
 
-## 📦 Sprint 3 – Orders, Routes & Optimization ⏳ (Next Week)
-### 🎯 Goals:
-Implement the core logic — order management and smart route generation.
+Implement the core logistics logic with smart routing.
 
-### 🧩 Tasks:
-- [x] CRUD for **Orders** (create, update status, delete)
-- [x] **Route Management:**
-  - [x] Create new route and assign orders
-  - [x] Manage delivery stops (RouteStops)
-- [ ] **Route Optimization Service:**
-  - [ ] Use Google Maps Distance Matrix API
-  - [ ] Store optimized route in the database
-- [ ] Add complete Swagger documentation for all routes
+🧩 Tasks:
 
-**Deliverable:**  
-Automated smart routing system that assigns orders efficiently 🧠
+ CRUD for Orders
 
----
+ Manage Routes and Stops
 
-## 🗺 Sprint 4 – Frontend Dashboard + Map ⏳
-### 🎯 Goals:
-Develop a modern management dashboard with live map visualization.
+ Google Distance API integration
 
-### 🧩 Tasks:
-- [ ] Initialize Frontend project (`apps/web`)
-- [ ] Build Login / Register pages
-- [ ] Create Dashboard with statistics (Users, Orders, Routes)
-- [ ] Integrate API via Axios or React Query
-- [ ] Display delivery routes on Google Maps / Leaflet
-- [ ] Basic UI design with TailwindCSS or MUI
+ Smart Route Optimization
 
-**Deliverable:**  
-Fully functional admin dashboard for managers and drivers with live route visualization.
+ Driver start-location aware
 
----
+ Distance + Duration calculation
 
-## 🧾 Sprint 5 – Testing & Deployment (Optional)
-### 🎯 Goals:
-Stabilize and prepare for production deployment.
+ ETA per stop (etaMin)
 
-### 🧩 Tasks:
-- [ ] Unit tests (Jest / Vitest)
-- [ ] Integration tests using Fastify inject
-- [ ] Dockerfile for API build
-- [ ] Deploy API to Render / Railway / Fly.io
-- [ ] Deploy Frontend to Vercel / Netlify
-- [ ] Secure `.env.production` configuration
+ Redis caching for distances
 
-**Deliverable:**  
-Production-ready, tested, and deployed Deli-Baba system.
+ Rate Limit + CORS protection
 
----
+ Swagger updated for all endpoints
 
-## 📈 Sprint Progress Overview
+Deliverable:
+Optimized, production-grade routing engine with distance & ETA tracking.
 
-| Sprint | Period | Focus | Status |
-|---------|---------|--------|--------|
-| 1 | Completed | Infrastructure & DB Setup | ✅ Done |
-| 2 | Completed | Auth + CRUD | ✅ Done |
-| 3 | Current | Route Optimization | ⏳ Planned |
-| 4 | Next Week | Frontend Dashboard | ⏳ Planned |
-| 5 | Following Week | Testing & Deployment | ⏳ Planned |
+⚙️ Sprint 4 – System Monitoring & Health (In Progress)
+🎯 Goals:
 
----
+Add observability, performance monitoring, and API stability tools.
 
- ![Last Updated](https://img.shields.io/github/last-commit/Liranuziyahu/deli-baba-server?label=Last%20Updated)
+🧩 Tasks:
 
+ Add /system/health endpoint
+→ Returns DB, Redis, and Google API connection status
+
+ Add /system/usage endpoint
+→ Returns API usage stats from Redis
+
+ Setup internal logs (app.log.info, error, warn)
+
+ Add Winston / Pino transport for log persistence
+
+ Add uptime info + server version
+
+Deliverable:
+Production-grade monitoring layer and reliability endpoints for uptime & analytics.
+
+🗺 Sprint 5 – Frontend Dashboard + Map (Next)
+🎯 Goals:
+
+Develop a management dashboard and driver view with live map integration.
+
+🧩 Tasks:
+
+ Initialize apps/web (React + Tailwind)
+
+ Login / Register UI
+
+ Dashboard with statistics (Users, Orders, Routes)
+
+ Integrate API via Axios / React Query
+
+ Google Maps visualization
+
+ Live route tracking for drivers
+
+Deliverable:
+Admin dashboard and driver interface with route map & status updates.
+
+🧾 Sprint 6 – Testing & Deployment (Next)
+🎯 Goals:
+
+Stabilize, monitor, and deploy for production.
+
+🧩 Tasks:
+
+ Unit + Integration tests
+
+ Docker build pipeline
+
+ .env.production handling
+
+ CI/CD integration
+
+ Deploy Backend (Railway / Fly.io)
+
+ Deploy Frontend (Vercel / Netlify)
+
+Deliverable:
+Production-ready deployment with monitoring and testing coverage.
+
+📈 Sprint Progress Overview
+Sprint	Period	Focus	Status
+1	Completed	Infrastructure & DB Setup	✅ Done
+2	Completed	Auth + CRUD	✅ Done
+3	Completed	Route Optimization	✅ Done
+4	Current	Health & Monitoring	🚧 In Progress
+5	Next	Frontend Dashboard	⏳ Planned
+6	Following	Testing & Deployment	⏳ Planned
