@@ -33,6 +33,12 @@ enum StopStatus {
   SKIPPED
 }
 
+enum RouteStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
 /// --- Core Users/Drivers ---
 
 model User {
@@ -99,7 +105,7 @@ model Route {
   completedAt DateTime?
   distanceKm  Decimal?  @db.Decimal(10, 2)
   durationMin Int? // planned total minutes
-  status      String    @default("PLANNED") // PLANNED/IN_PROGRESS/COMPLETED
+  status      RouteStatus    @default(PLANNED) // PLANNED/IN_PROGRESS/COMPLETED
 
   driver Driver?     @relation(fields: [driverId], references: [id])
   stops  RouteStop[]
