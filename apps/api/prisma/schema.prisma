@@ -39,6 +39,13 @@ enum RouteStatus {
   COMPLETED
 }
 
+enum DriverVehicleType {
+  MOTORCYCLE  // אופנוע
+  CAR         // רכב קטן
+  VAN         // רכב מסחרי / טנדר
+}
+
+
 /// --- Core Users/Drivers ---
 
 model User {
@@ -56,18 +63,23 @@ model User {
 }
 
 model Driver {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    Int      @unique
-  phone     String?
-  vehicle   String? // plate or model
-  capacity  Int? // capacity units (e.g., boxes)
-  active    Boolean  @default(true)
+  id           Int               @id @default(autoincrement())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  userId       Int               @unique
+  phone        String?
+  vehicle      DriverVehicleType // 🧭 סוג כלי הרכב
+  capacity     Int?
+  active       Boolean           @default(true)
 
-  user   User    @relation(fields: [userId], references: [id])
-  routes Route[]
+  // מיקום חי
+  currentLat   Decimal?          @db.Decimal(9, 6)
+  currentLng   Decimal?          @db.Decimal(9, 6)
+
+  user         User              @relation(fields: [userId], references: [id])
+  routes       Route[]
 }
+
 
 /// --- Orders / Addresses ---
 

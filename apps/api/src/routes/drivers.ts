@@ -1,6 +1,12 @@
-// apps/api/src/routes/drivers.ts
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+
+// ✅ מאפשר ל-Fastify להחזיק חיבורי SSE פתוחים בזיכרון
+declare module "fastify" {
+  interface FastifyInstance {
+    sseClients?: Map<number, Set<any>>;
+  }
+}
 
 // ממיר "true/false/1/0/on/off/yes/no" => boolean | undefined
 const booleanFromQuery = z.preprocess((v) => {
@@ -15,6 +21,30 @@ const booleanFromQuery = z.preprocess((v) => {
 }, z.boolean().optional());
 
 export default async function driversRoutes(app: FastifyInstance) {
+  // ========= Live location stream (SSE) =========
+  app.get("/drivers/:id/stream", async (req, reply) => {
+    const id = Number(req.params.id);
+
+    reply.raw.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    // שמור את ה-connection ברשימה גלובלית
+    if (!app.sseClients) app.sseClients = new Map<number, Set<any>>();
+    if (!app.sseClients.has(id)) app.sseClients.set(id, new Set());
+    app.sseClients.get(id)!.add(reply.raw);
+
+    // שלח חיבור ראשוני
+    reply.raw.write(`data: ${JSON.stringify({ connected: true })}\n\n`);
+
+    // נקה את הלקוח כשנסגר החיבור
+    req.raw.on("close", () => {
+      app.sseClients.get(id)?.delete(reply.raw);
+    });
+  });
+
   // ========= List =========
   const listQ = z.object({
     page: z.coerce.number().int().min(1).default(1),
@@ -85,11 +115,20 @@ export default async function driversRoutes(app: FastifyInstance) {
     }
   });
 
-  // ========= Create (מחייב userId קיים ושהוא פנוי) =========
+  // ========= Create =========
+
+  const vehicleEnum = z
+    .string()
+    .transform((val) => val.trim().toUpperCase())
+    .refine((val) => ["MOTORCYCLE", "CAR", "VAN"].includes(val), {
+      message: "Vehicle must be one of: MOTORCYCLE, CAR, VAN",
+    })
+    .optional();
+
   const createB = z.object({
     userId: z.coerce.number().int().positive(),
     phone: z.string().trim().optional(),
-    vehicle: z.string().trim().optional(),
+    vehicle: vehicleEnum,
     capacity: z.coerce.number().int().positive().optional(),
   });
 
@@ -101,7 +140,6 @@ export default async function driversRoutes(app: FastifyInstance) {
       const exists = await app.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
       if (!exists) return reply.code(400).send({ error: "UserNotFound", message: "userId does not exist" });
 
-      // יצירה (userId הוא unique במודל Driver, אז Prisma יזרוק P2002 אם כבר קיים Driver עבורו)
       const driver = await app.prisma.driver.create({
         data: { userId, phone, vehicle, capacity },
         select: { id: true },
@@ -121,11 +159,48 @@ export default async function driversRoutes(app: FastifyInstance) {
     }
   });
 
+  // ========= Update Location =========
+  app.patch("/drivers/:id/location", { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
+      const id = z.coerce
+        .number()
+        .int()
+        .positive()
+        .parse((req.params as any).id);
+      const body = z.object({ lat: z.coerce.number(), lng: z.coerce.number() }).parse(req.body);
+
+      const updated = await app.prisma.driver.update({
+        where: { id },
+        data: { currentLat: body.lat, currentLng: body.lng },
+        select: { id: true, currentLat: true, currentLng: true },
+      });
+
+      // 🔊 שדר ללקוחות שמאזינים (אם קיימים)
+      const clients = app.sseClients?.get(id);
+      if (clients && clients.size > 0) {
+        for (const res of clients) {
+          res.write(`data: ${JSON.stringify(updated)}\n\n`);
+        }
+      }
+
+      return reply.code(200).send({ success: true, driver: updated });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
+      }
+      if (err.code === "P2025") {
+        return reply.code(404).send({ error: "DriverNotFound" });
+      }
+      app.log.error({ err }, "PATCH /drivers/:id/location failed");
+      return reply.code(500).send({ error: "UpdateDriverLocationFailed" });
+    }
+  });
+
   // ========= Update =========
   const patchB = z
     .object({
       phone: z.string().trim().optional(),
-      vehicle: z.string().trim().optional(),
+      vehicle: vehicleEnum,
       capacity: z.coerce.number().int().positive().optional(),
       active: z.boolean().optional(),
     })
@@ -169,7 +244,6 @@ export default async function driversRoutes(app: FastifyInstance) {
         .int()
         .positive()
         .parse((req.params as any).id);
-
       await app.prisma.driver.delete({ where: { id } });
       return reply.code(204).send();
     } catch (err: any) {
