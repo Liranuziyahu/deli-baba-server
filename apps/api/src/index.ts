@@ -112,7 +112,7 @@ app.setErrorHandler((err, req, reply) => {
     return reply.code(400).send({ error: "ValidationError", issues: (err as any).issues });
   }
   req.log.error(err);
-  reply.code(500).send({ error: `InternalError -${err?.error}` });
+  reply.code(500).send({ error: `InternalError` });
 });
 
 // root
