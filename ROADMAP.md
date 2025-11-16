@@ -1,136 +1,363 @@
-# 🗺️ Deli-Baba Roadmap
+🗺️ Deli-Baba Roadmap
+🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
+🎯 Goals
 
----
-
-## 🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
-
-### 🎯 Goals
-Set up full development environment (Backend + DB + Swagger)  
+Set up full development environment (Backend + DB + Swagger)
 and build a stable and secure API foundation.
 
-### ✅ Tasks
-- [x] Installed **Fastify + Prisma + Zod**
-- [x] Connected **MySQL & Redis** via Docker Compose
-- [x] Created `.env` file and hid secrets from Git
-- [x] Built **Postman → OpenAPI** generation script
-- [x] Integrated **Swagger (static mode)**
-- [x] Verified **Prisma Studio (`localhost:5555`)**
-- [x] Cleaned GitGuardian findings (ignore, rebase)
+✅ Tasks
 
-**Deliverable:**  
+ Installed Fastify + Prisma + Zod
+
+ Connected MySQL & Redis via Docker Compose
+
+ Created .env file and hid secrets from Git
+
+ Built Postman → OpenAPI generation script
+
+ Integrated Swagger (static mode)
+
+ Verified Prisma Studio (localhost:5555)
+
+ Cleaned GitGuardian findings (ignore, rebase)
+
+Deliverable:
 Working API with connected database and generated Swagger documentation.
 
----
+🔐 Sprint 2 – Authentication & Basic CRUD ✅ (Completed)
+🎯 Goals
 
-## 🔐 Sprint 2 – Authentication & Basic CRUD ✅ (Completed)
-
-### 🎯 Goals
 Implement secure user authentication and base management endpoints.
 
-### 🧩 Tasks
-- [x] Added **JWT Auth**
-  - [x] `POST /auth/register`
-  - [x] `POST /auth/login`
-  - [x] `GET /auth/me`
-- [x] Created authentication middleware for protected routes
-- [x] Full CRUD for **Users**
-- [x] Full CRUD for **Drivers**
-- [x] Validation with **Zod**
-- [x] Updated **Swagger** documentation
+🧩 Tasks
 
-**Deliverable:**  
-Secure authentication + user and driver management via API & Swagger.
+ Added JWT Auth
 
----
+ POST /auth/register
 
-## 📦 Sprint 3 – Orders, Routes & Optimization ✅ (Completed)
+ POST /auth/login
 
-### 🎯 Goals
+ GET /auth/me
+
+ Authentication middleware (protected routes)
+
+ Full CRUD for Users
+
+ Full CRUD for Drivers
+
+ Validation using Zod
+
+ Updated Swagger
+
+Deliverable:
+Secure auth system + fully managed User/Driver endpoints.
+
+📦 Sprint 3 – Orders, Routes & Optimization ✅ (Completed)
+🎯 Goals
+
 Implement the core logistics logic with smart routing.
 
-### 🧩 Tasks
-- [x] CRUD for **Orders**
-- [x] Full management for **Routes** and **Stops**
-- [x] **Route Optimization Service**
-  - [x] Google Maps Distance Matrix integration  
-  - [x] Smart order sequencing based on driver start location  
-  - [x] ETA calculation for each stop  
-  - [x] Redis caching for distances  
-- [x] Added **Rate Limiter + CORS Protection**
-- [x] Updated Swagger for all endpoints
+🧩 Tasks
 
-**Deliverable:**  
-Optimized, production-grade routing engine with distance & ETA tracking.
+ CRUD for Orders
 
----
+ CRUD for Routes & Route Stops
 
-## ⚙️ Sprint 4 – System Monitoring & Health 🚧 (In Progress)
+ Route Optimization Engine:
 
-### 🎯 Goals
-Add observability, performance monitoring, and system reliability tools.
+ Google Maps Distance Matrix
 
-### 🧩 Tasks
-- [ ] Add `/system/health` endpoint  
-  → Returns DB, Redis, and Google API connection status
-- [x] Add `/system/usage` endpoint  
-  → Returns API usage stats from Redis  
-- [x] Improved internal logging (`app.log.info`, `warn`, `error`)
-- [ ] Add **Winston/Pino** transport for persistent logs
-- [ ] Include uptime, memory usage, and server version info
+ Smart stop sequencing
 
-**Deliverable:**  
-Production-grade monitoring layer with health & analytics endpoints.
+ ETA calculations
 
----
+ Redis caching to reduce API cost
 
-## 🗺 Sprint 5 – Frontend Dashboard + Map ⏳ (Planned)
+ Rate Limiter + CORS Security
 
-### 🎯 Goals
-Develop a modern dashboard for admins and drivers with live map visualization.
+ Updated Swagger for all endpoints
 
-### 🧩 Tasks
-- [ ] Initialize `apps/web` (React + Tailwind)
-- [ ] Build Login / Register pages
-- [ ] Create Dashboard with statistics (Users, Orders, Routes)
-- [ ] Integrate API via Axios or React Query
-- [ ] Display delivery routes on **Google Maps / Leaflet**
-- [ ] Add live route tracking (real-time driver status)
+Deliverable:
+Powerful routing engine with optimized ETAs and safe external API usage.
 
-**Deliverable:**  
-Fully functional dashboard for managers & drivers with live route visualization.
+⚙️ Sprint 4 – System Monitoring, Health & Logging 🚧 (In Progress)
+🎯 Goals
 
----
+Enhance system observability and reliability.
 
-## 🧾 Sprint 6 – Testing & Deployment ⏳ (Planned)
+🧩 Tasks
 
-### 🎯 Goals
-Stabilize and prepare the full system for production deployment.
+ /system/health → DB + Redis + Google API connectivity
 
-### 🧩 Tasks
-- [ ] Unit tests (Jest / Vitest)
-- [ ] Integration tests (Fastify inject)
-- [ ] Dockerfile for API build
-- [ ] CI/CD pipeline for automatic deployments
-- [ ] Deploy **API** → Railway / Fly.io / Render
-- [ ] Deploy **Frontend** → Vercel / Netlify
-- [ ] Secure `.env.production` configuration
+ /system/usage → API usage stats (Redis-based)
 
-**Deliverable:**  
-Production-ready, tested, and deployed Deli-Baba system.
+ Improved structured logging (info/warn/error)
 
----
+ Persistent log storage (Pino/Winston)
 
-## 📈 Sprint Progress Overview
+ System uptime & memory usage reporting
 
-| Sprint | Focus | Status |
-|:------:|:------|:------:|
-| 1 | Infrastructure & DB Setup | ✅ Done |
-| 2 | Auth + CRUD | ✅ Done |
-| 3 | Route Optimization | ✅ Done |
-| 4 | Health & Monitoring | 🚧 In Progress |
-| 5 | Frontend Dashboard | ⏳ Planned |
-| 6 | Testing & Deployment | ⏳ Planned |
+🚚 Sprint 5 – Driver Live Tracking (Backend) ✅ (Completed)
+🎯 Goals
 
----
+Add real-time driver tracking and push updates to the frontend.
 
-![Last Updated](https://img.shields.io/github/last-commit/Liranuziyahu/deli-baba-server?label=Last%20Updated)
+🧩 Tasks
+Database & Schema
+
+ Added currentLat, currentLng to Driver
+
+ Added DriverVehicleType enum: MOTORCYCLE | CAR | VAN
+
+ Enforced enum validation in API (Zod)
+
+Live Tracking API
+
+ Added endpoint:
+GET /drivers/:driverId/stream → Live SSE event stream
+
+ Added endpoint:
+PATCH /drivers/:driverId/location → Driver updates location
+
+ Broadcast location updates to all connected SSE clients
+
+ Connection cleanup & error handling
+
+Reliability Features
+
+ Heartbeat → Sends ping every 30 seconds to keep SSE alive
+
+ Auto-Cleanup → Removes closed/inactive clients every 10 minutes
+
+ Server avoids memory leaks with controlled Maps
+
+Deliverable:
+Stable, real-time driver location tracking ready for frontend integration.
+
+🗺 Sprint 6 – Frontend Dashboard + Live Map ⏳ (Planned)
+🎯 Goals
+
+Create a modern dashboard for admins & drivers with live map updates.
+
+🧩 Tasks
+
+ Initialize React app (apps/web)
+
+ Login / Register UI
+
+ Admin Dashboard (Users / Drivers / Orders / Routes)
+
+ Map view with route visualization (Google Maps / Leaflet)
+
+ Live tracking: update driver marker via SSE stream
+
+ Display progress along route & ETA updates
+
+🧾 Sprint 7 – Testing & Deployment ⏳ (Planned)
+🎯 Goals
+
+Prepare backend + frontend for production.
+
+🧩 Tasks
+
+ Unit tests (Jest / Vitest)
+
+ Integration tests (Fastify inject)
+
+ Dockerfile for API
+
+ CI/CD pipeline
+
+ Deploy API → Railway / Fly.io
+
+ Deploy Frontend → Vercel
+
+ Production .env setup
+
+📈 Sprint Progress Overview
+Sprint	Focus	Status
+🗺️ Deli-Baba Roadmap
+🚀 Sprint 1 – Infrastructure & Automation ✅ (Completed)
+🎯 Goals
+
+Set up full development environment (Backend + DB + Swagger)
+and build a stable and secure API foundation.
+
+✅ Tasks
+
+ Installed Fastify + Prisma + Zod
+
+ Connected MySQL & Redis via Docker Compose
+
+ Created .env file and hid secrets from Git
+
+ Built Postman → OpenAPI generation script
+
+ Integrated Swagger (static mode)
+
+ Verified Prisma Studio (localhost:5555)
+
+ Cleaned GitGuardian findings (ignore, rebase)
+
+Deliverable:
+Working API with connected database and generated Swagger documentation.
+
+🔐 Sprint 2 – Authentication & Basic CRUD ✅ (Completed)
+🎯 Goals
+
+Implement secure user authentication and base management endpoints.
+
+🧩 Tasks
+
+ Added JWT Auth
+
+ POST /auth/register
+
+ POST /auth/login
+
+ GET /auth/me
+
+ Authentication middleware (protected routes)
+
+ Full CRUD for Users
+
+ Full CRUD for Drivers
+
+ Validation using Zod
+
+ Updated Swagger
+
+Deliverable:
+Secure auth system + fully managed User/Driver endpoints.
+
+📦 Sprint 3 – Orders, Routes & Optimization ✅ (Completed)
+🎯 Goals
+
+Implement the core logistics logic with smart routing.
+
+🧩 Tasks
+
+ CRUD for Orders
+
+ CRUD for Routes & Route Stops
+
+ Route Optimization Engine:
+
+ Google Maps Distance Matrix
+
+ Smart stop sequencing
+
+ ETA calculations
+
+ Redis caching to reduce API cost
+
+ Rate Limiter + CORS Security
+
+ Updated Swagger for all endpoints
+
+Deliverable:
+Powerful routing engine with optimized ETAs and safe external API usage.
+
+⚙️ Sprint 4 – System Monitoring, Health & Logging 🚧 (In Progress)
+🎯 Goals
+
+Enhance system observability and reliability.
+
+🧩 Tasks
+
+ /system/health → DB + Redis + Google API connectivity
+
+ /system/usage → API usage stats (Redis-based)
+
+ Improved structured logging (info/warn/error)
+
+ Persistent log storage (Pino/Winston)
+
+ System uptime & memory usage reporting
+
+🚚 Sprint 5 – Driver Live Tracking (Backend) ✅ (Completed)
+🎯 Goals
+
+Add real-time driver tracking and push updates to the frontend.
+
+🧩 Tasks
+Database & Schema
+
+ Added currentLat, currentLng to Driver
+
+ Added DriverVehicleType enum: MOTORCYCLE | CAR | VAN
+
+ Enforced enum validation in API (Zod)
+
+Live Tracking API
+
+ Added endpoint:
+GET /drivers/:driverId/stream → Live SSE event stream
+
+ Added endpoint:
+PATCH /drivers/:driverId/location → Driver updates location
+
+ Broadcast location updates to all connected SSE clients
+
+ Connection cleanup & error handling
+
+Reliability Features
+
+ Heartbeat → Sends ping every 30 seconds to keep SSE alive
+
+ Auto-Cleanup → Removes closed/inactive clients every 10 minutes
+
+ Server avoids memory leaks with controlled Maps
+
+Deliverable:
+Stable, real-time driver location tracking ready for frontend integration.
+
+🗺 Sprint 6 – Frontend Dashboard + Live Map ⏳ (Planned)
+🎯 Goals
+
+Create a modern dashboard for admins & drivers with live map updates.
+
+🧩 Tasks
+
+ Initialize React app (apps/web)
+
+ Login / Register UI
+
+ Admin Dashboard (Users / Drivers / Orders / Routes)
+
+ Map view with route visualization (Google Maps / Leaflet)
+
+ Live tracking: update driver marker via SSE stream
+
+ Display progress along route & ETA updates
+
+🧾 Sprint 7 – Testing & Deployment ⏳ (Planned)
+🎯 Goals
+
+Prepare backend + frontend for production.
+
+🧩 Tasks
+
+ Unit tests (Jest / Vitest)
+
+ Integration tests (Fastify inject)
+
+ Dockerfile for API
+
+ CI/CD pipeline
+
+ Deploy API → Railway / Fly.io
+
+ Deploy Frontend → Vercel
+
+ Production .env setup
+
+📈 Sprint Progress Overview
+Sprint	Focus	Status
+1	Infrastructure Setup	✅ Done
+2	Auth + CRUD	✅ Done
+3	Routing Engine	✅ Done
+4	Health & Monitoring	🚧 In Progress
+5	Real-time Driver Tracking	✅ Done
+6	Frontend Dashboard	⏳ Planned
+7	Testing & Deployment	⏳ Planned
