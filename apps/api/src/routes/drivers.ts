@@ -22,28 +22,69 @@ const booleanFromQuery = z.preprocess((v) => {
 
 export default async function driversRoutes(app: FastifyInstance) {
   // ========= Live location stream (SSE) =========
-  app.get("/drivers/:id/stream", async (req, reply) => {
-    const id = Number(req.params.id);
+  app.get("/drivers/:driverId/stream", { preHandler: [app.authenticate] }, async (req, reply) => {
+    const driverId = Number(req.params.driverId);
 
+    // ---- 1. Validate driverId format ----
+    if (!Number.isFinite(driverId) || driverId <= 0) {
+      return reply.code(400).send({ error: "InvalidDriverId" });
+    }
+
+    // ---- 2. Make sure driver exists ----
+    const driver = await app.prisma.driver.findUnique({
+      where: { id: driverId },
+      select: { id: true, userId: true },
+    });
+
+    if (!driver) {
+      return reply.code(404).send({ error: "DriverNotFound" });
+    }
+
+    // ---- 3. Setup SSE ----
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     });
 
-    // שמור את ה-connection ברשימה גלובלית
-    if (!app.sseClients) app.sseClients = new Map<number, Set<any>>();
-    if (!app.sseClients.has(id)) app.sseClients.set(id, new Set());
-    app.sseClients.get(id)!.add(reply.raw);
+    if (!app.sseClients) app.sseClients = new Map();
+    if (!app.sseClients.has(driverId)) app.sseClients.set(driverId, new Set());
+    app.sseClients.get(driverId)!.add(reply.raw);
 
-    // שלח חיבור ראשוני
+    console.log(`📡 New SSE connection for driver ${driverId}`);
+
     reply.raw.write(`data: ${JSON.stringify({ connected: true })}\n\n`);
 
-    // נקה את הלקוח כשנסגר החיבור
     req.raw.on("close", () => {
-      app.sseClients.get(id)?.delete(reply.raw);
+      console.log(`❌ SSE connection closed for driver ${driverId}`);
+      app.sseClients.get(driverId)?.delete(reply.raw);
     });
   });
+
+  // ✅ HEARTBEAT - שולח ping כל 30 שניות לכל חיבור פתוח
+  setInterval(() => {
+    if (!app.sseClients) return;
+    for (const [, clients] of app.sseClients.entries()) {
+      for (const res of clients) {
+        try {
+          res.write(`event: ping\ndata: {}\n\n`);
+        } catch {
+          // אם יש שגיאה - נסיר את החיבור
+          clients.delete(res);
+        }
+      }
+    }
+  }, 30_000);
+
+  // ✅ CLEANUP - מסיר קבוצות ריקות כל 10 דקות
+  setInterval(() => {
+    if (!app.sseClients) return;
+    for (const [id, clients] of app.sseClients.entries()) {
+      if (clients.size === 0) {
+        app.sseClients.delete(id);
+      }
+    }
+  }, 10 * 60_000);
 
   // ========= List =========
   const listQ = z.object({
@@ -160,38 +201,38 @@ export default async function driversRoutes(app: FastifyInstance) {
   });
 
   // ========= Update Location =========
-  app.patch("/drivers/:id/location", { preHandler: [app.authenticate] }, async (req, reply) => {
+  app.patch("/drivers/:driverId/location", { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const id = z.coerce
-        .number()
-        .int()
-        .positive()
-        .parse((req.params as any).id);
-      const body = z.object({ lat: z.coerce.number(), lng: z.coerce.number() }).parse(req.body);
+      const driverId = Number(req.params.driverId);
 
+      if (!Number.isFinite(driverId) || driverId <= 0) {
+        return reply.code(400).send({ error: "InvalidDriverId" });
+      }
+
+      const body = z
+        .object({
+          lat: z.coerce.number(),
+          lng: z.coerce.number(),
+        })
+        .parse(req.body);
+
+      // ------ Step 1: update location using driverId -------
       const updated = await app.prisma.driver.update({
-        where: { id },
+        where: { id: driverId },
         data: { currentLat: body.lat, currentLng: body.lng },
         select: { id: true, currentLat: true, currentLng: true },
       });
 
-      // 🔊 שדר ללקוחות שמאזינים (אם קיימים)
-      const clients = app.sseClients?.get(id);
-      if (clients && clients.size > 0) {
+      // ------ Step 2: SSE broadcast using driverId -------
+      const clients = app.sseClients?.get(driverId);
+      if (clients) {
         for (const res of clients) {
           res.write(`data: ${JSON.stringify(updated)}\n\n`);
         }
       }
 
-      return reply.code(200).send({ success: true, driver: updated });
-    } catch (err: any) {
-      if (err instanceof z.ZodError) {
-        return reply.code(400).send({ error: "ValidationError", issues: err.errors });
-      }
-      if (err.code === "P2025") {
-        return reply.code(404).send({ error: "DriverNotFound" });
-      }
-      app.log.error({ err }, "PATCH /drivers/:id/location failed");
+      return reply.send({ success: true, driver: updated });
+    } catch (err) {
       return reply.code(500).send({ error: "UpdateDriverLocationFailed" });
     }
   });
